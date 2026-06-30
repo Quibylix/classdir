@@ -1,0 +1,21 @@
+include:
+  - path: ./database/compose.yml
+
+services:
+  api:
+    build: ./api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://classdir:${DB_PASSWORD}@database:5432/classdir?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8080:8080"
+
+  client:
+    build: ./client
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
