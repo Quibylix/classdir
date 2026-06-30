@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 )
@@ -46,6 +47,10 @@ func createPresentationHandler(store presentationStore) http.HandlerFunc {
 		}
 
 		if err := store.create(r.Context(), body.ID, body.Title); err != nil {
+			if errors.Is(err, ErrDuplicateKey) {
+				writeError(w, http.StatusConflict, errConflict, errMsgDuplicateID)
+				return
+			}
 			writeError(w, http.StatusInternalServerError, errInternalError, errMsgCreatePresentation)
 			return
 		}

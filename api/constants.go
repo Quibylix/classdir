@@ -17,6 +17,7 @@ const (
 	errInternalError = "INTERNAL_ERROR"
 	errInvalidUUID   = "INVALID_UUID"
 	errMissingField  = "MISSING_FIELD"
+	errConflict      = "CONFLICT"
 )
 
 // Error messages
@@ -29,6 +30,7 @@ const (
 	errMsgMissingToken       = "missing token"
 	errMsgInvalidToken       = "invalid or expired token"
 	errMsgCreatePresentation = "failed to create presentation"
+	errMsgDuplicateID       = "a presentation with this id already exists"
 )
 
 // Cookie

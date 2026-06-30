@@ -129,7 +129,7 @@ func TestCreatePresentation_InvalidJSON(t *testing.T) {
 func TestCreatePresentation_DuplicateID(t *testing.T) {
 	store := &mockPresentationStore{
 		createFunc: func(ctx context.Context, id, title string) error {
-			return errors.New("duplicate key")
+			return ErrDuplicateKey
 		},
 	}
 

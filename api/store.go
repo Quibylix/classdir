@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrDuplicateKey = errors.New("duplicate key")
 
 type presentationStore interface {
 	create(ctx context.Context, id, title string) error
@@ -22,5 +26,11 @@ func (s *pgPresentationStore) create(ctx context.Context, id, title string) erro
 	ctx, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 	_, err := s.pool.Exec(ctx, `INSERT INTO presentations (id, title) VALUES ($1, $2)`, id, title)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return ErrDuplicateKey
+		}
+	}
 	return err
 }
