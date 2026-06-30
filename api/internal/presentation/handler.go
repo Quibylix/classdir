@@ -31,6 +31,7 @@ type Presentation struct {
 
 func RegisterRoutes(mux *http.ServeMux, store Store) {
 	mux.HandleFunc("POST /api/v1/presentation", createPresentationHandler(store))
+	mux.HandleFunc("GET /api/v1/presentation/{presentationId}", getPresentationHandler(store))
 }
 
 func createPresentationHandler(store Store) http.HandlerFunc {
@@ -73,5 +74,33 @@ func createPresentationHandler(store Store) http.HandlerFunc {
 			return
 		}
 		response.WriteJSON(w, http.StatusCreated, data)
+	}
+}
+
+func getPresentationHandler(store Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("presentationId")
+
+		if !validate.IsValidUUIDv7(id) {
+			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
+			return
+		}
+
+		pres, err := store.GetByID(r.Context(), id)
+		if err != nil {
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgGetPresentation)
+			return
+		}
+		if pres == nil {
+			response.WriteError(w, http.StatusNotFound, cfg.ErrNotFound, cfg.ErrMsgNotFound)
+			return
+		}
+
+		data, err := json.Marshal(pres)
+		if err != nil {
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgGetPresentation)
+			return
+		}
+		response.WriteJSON(w, http.StatusOK, data)
 	}
 }

@@ -16,6 +16,7 @@ const (
 	ErrInvalidUUID   = "INVALID_UUID"
 	ErrMissingField  = "MISSING_FIELD"
 	ErrConflict      = "CONFLICT"
+	ErrNotFound      = "NOT_FOUND"
 )
 
 const (
@@ -27,6 +28,8 @@ const (
 	ErrMsgMissingToken       = "missing token"
 	ErrMsgInvalidToken       = "invalid or expired token"
 	ErrMsgCreatePresentation = "failed to create presentation"
+	ErrMsgGetPresentation   = "failed to retrieve presentation"
+	ErrMsgNotFound          = "presentation not found"
 	ErrMsgDuplicateID       = "a presentation with this id already exists"
 )
 
