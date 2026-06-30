@@ -9,6 +9,7 @@ services:
         condition: service_completed_successfully
     environment:
       DATABASE_URL: postgres://classdir:${DB_PASSWORD}@database:5432/classdir?sslmode=disable
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8080:8080"
