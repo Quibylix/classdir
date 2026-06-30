@@ -126,6 +126,25 @@ func TestCreatePresentation_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestCreatePresentation_DuplicateID(t *testing.T) {
+	store := &mockPresentationStore{
+		createFunc: func(ctx context.Context, id, title string) error {
+			return errors.New("duplicate key")
+		},
+	}
+
+	handler := createPresentationHandler(store)
+	body := `{"id":"0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f","title":"My Presentation"}`
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusConflict)
+	}
+}
+
 func TestCreatePresentation_StoreError(t *testing.T) {
 	store := &mockPresentationStore{
 		createFunc: func(ctx context.Context, id, title string) error {
