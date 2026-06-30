@@ -28,7 +28,7 @@ func (s *pgPresentationStore) create(ctx context.Context, id, title string) erro
 	_, err := s.pool.Exec(ctx, `INSERT INTO presentations (id, title) VALUES ($1, $2)`, id, title)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if errors.As(err, &pgErr) && pgErr.Code == pgErrUniqueViolation {
 			return ErrDuplicateKey
 		}
 	}

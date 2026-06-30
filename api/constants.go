@@ -51,3 +51,6 @@ const defaultPort = "8080"
 
 // Database
 const dbTimeout = 5 * time.Second
+
+// PostgreSQL error codes
+const pgErrUniqueViolation = "23505"
