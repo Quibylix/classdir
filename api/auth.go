@@ -52,6 +52,27 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(cookieName)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, errUnauthorized, errMsgMissingToken)
+			return
+		}
+
+		secret := os.Getenv(envJWTSecret)
+		token, err := jwt.ParseWithClaims(cookie.Value, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+			return []byte(secret), nil
+		})
+		if err != nil || !token.Valid {
+			writeError(w, http.StatusUnauthorized, errUnauthorized, errMsgInvalidToken)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
