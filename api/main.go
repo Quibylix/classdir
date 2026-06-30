@@ -4,27 +4,29 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"classdir/api/internal/auth"
+	"classdir/api/internal/db"
+	"classdir/api/internal/presentation"
+	"classdir/api/internal/shared/cfg"
 )
 
 func main() {
-	initDB()
+	pool := db.InitDB()
 
-	port := os.Getenv(envPort)
+	port := os.Getenv(cfg.EnvPort)
 	if port == "" {
-		port = defaultPort
+		port = cfg.DefaultPort
 	}
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /api/v1/auth/login", loginHandler)
-	mux.HandleFunc("POST /api/v1/auth/logout", logoutHandler)
-
-	presStore := newPresentationStore(db)
+	auth.RegisterRoutes(mux)
 
 	api := http.NewServeMux()
-	api.HandleFunc("POST /api/v1/presentation", createPresentationHandler(presStore))
+	presentation.RegisterRoutes(api, presentation.NewStore(pool))
 
-	mux.Handle("/api/v1/", authMiddleware(api))
+	mux.Handle("/api/v1/", auth.AuthMiddleware(api))
 
 	log.Printf("API server starting on :%s", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {

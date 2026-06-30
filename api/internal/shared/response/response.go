@@ -1,4 +1,4 @@
-package main
+package response
 
 import (
 	"encoding/json"
@@ -18,13 +18,13 @@ type ErrorResponse struct {
 	Error ErrorData `json:"error"`
 }
 
-func writeJSON(w http.ResponseWriter, status int, data json.RawMessage) {
+func WriteJSON(w http.ResponseWriter, status int, data json.RawMessage) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(JSONResponse{Data: data})
 }
 
-func writeError(w http.ResponseWriter, status int, code, msg string) {
+func WriteError(w http.ResponseWriter, status int, code, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(ErrorResponse{

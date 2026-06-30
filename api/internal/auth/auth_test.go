@@ -1,4 +1,4 @@
-package main
+package auth
 
 import (
 	"encoding/json"
@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"classdir/api/internal/shared/cfg"
+	"classdir/api/internal/shared/response"
 )
 
 func setupMux() *http.ServeMux {
@@ -16,8 +19,8 @@ func setupMux() *http.ServeMux {
 }
 
 func TestLoginHandler_ValidPassword(t *testing.T) {
-	t.Setenv(envAdminPass, "testpass")
-	t.Setenv(envJWTSecret, "testsecret")
+	t.Setenv(cfg.EnvAdminPass, "testpass")
+	t.Setenv(cfg.EnvJWTSecret, "testsecret")
 
 	mux := setupMux()
 
@@ -34,7 +37,7 @@ func TestLoginHandler_ValidPassword(t *testing.T) {
 	cookies := rec.Result().Cookies()
 	var token *http.Cookie
 	for _, c := range cookies {
-		if c.Name == cookieName {
+		if c.Name == cfg.CookieName {
 			token = c
 			break
 		}
@@ -54,14 +57,14 @@ func TestLoginHandler_ValidPassword(t *testing.T) {
 	if token.SameSite != http.SameSiteStrictMode {
 		t.Error("expected SameSite=Strict")
 	}
-	if token.MaxAge != cookieMaxAge {
-		t.Errorf("got MaxAge %d, want %d", token.MaxAge, cookieMaxAge)
+	if token.MaxAge != cfg.CookieMaxAge {
+		t.Errorf("got MaxAge %d, want %d", token.MaxAge, cfg.CookieMaxAge)
 	}
 }
 
 func TestLoginHandler_WrongPassword(t *testing.T) {
-	t.Setenv(envAdminPass, "testpass")
-	t.Setenv(envJWTSecret, "testsecret")
+	t.Setenv(cfg.EnvAdminPass, "testpass")
+	t.Setenv(cfg.EnvJWTSecret, "testsecret")
 
 	mux := setupMux()
 
@@ -75,12 +78,12 @@ func TestLoginHandler_WrongPassword(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 
-	var payload ErrorResponse
+	var payload response.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatal("expected error JSON, got:", rec.Body.String())
 	}
-	if payload.Error.Code != errUnauthorized {
-		t.Errorf("got code %q, want %q", payload.Error.Code, errUnauthorized)
+	if payload.Error.Code != cfg.ErrUnauthorized {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrUnauthorized)
 	}
 	if payload.Error.Message == "" {
 		t.Error("expected non-empty error message")
@@ -88,8 +91,8 @@ func TestLoginHandler_WrongPassword(t *testing.T) {
 }
 
 func TestLoginHandler_InvalidJSON(t *testing.T) {
-	t.Setenv(envAdminPass, "testpass")
-	t.Setenv(envJWTSecret, "testsecret")
+	t.Setenv(cfg.EnvAdminPass, "testpass")
+	t.Setenv(cfg.EnvJWTSecret, "testsecret")
 
 	mux := setupMux()
 
@@ -103,12 +106,12 @@ func TestLoginHandler_InvalidJSON(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 
-	var payload ErrorResponse
+	var payload response.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatal("expected error JSON, got:", rec.Body.String())
 	}
-	if payload.Error.Code != errInvalidJSON {
-		t.Errorf("got code %q, want %q", payload.Error.Code, errInvalidJSON)
+	if payload.Error.Code != cfg.ErrInvalidJSON {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrInvalidJSON)
 	}
 	if payload.Error.Message == "" {
 		t.Error("expected non-empty error message")
@@ -116,8 +119,8 @@ func TestLoginHandler_InvalidJSON(t *testing.T) {
 }
 
 func TestLoginHandler_EmptyBody(t *testing.T) {
-	t.Setenv(envAdminPass, "testpass")
-	t.Setenv(envJWTSecret, "testsecret")
+	t.Setenv(cfg.EnvAdminPass, "testpass")
+	t.Setenv(cfg.EnvJWTSecret, "testsecret")
 
 	mux := setupMux()
 
@@ -145,7 +148,7 @@ func TestLogoutHandler(t *testing.T) {
 	cookies := rec.Result().Cookies()
 	var token *http.Cookie
 	for _, c := range cookies {
-		if c.Name == cookieName {
+		if c.Name == cfg.CookieName {
 			token = c
 			break
 		}

@@ -1,4 +1,4 @@
-package main
+package presentation
 
 import (
 	"context"
@@ -8,13 +8,16 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"classdir/api/internal/shared/cfg"
+	"classdir/api/internal/shared/response"
 )
 
 type mockPresentationStore struct {
 	createFunc func(ctx context.Context, id, title string) error
 }
 
-func (m *mockPresentationStore) create(ctx context.Context, id, title string) error {
+func (m *mockPresentationStore) Create(ctx context.Context, id, title string) error {
 	return m.createFunc(ctx, id, title)
 }
 
@@ -38,14 +41,14 @@ func TestCreatePresentation_ValidInput(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusCreated)
 	}
 	if !called {
-		t.Error("expected store.create to be called")
+		t.Error("expected store.Create to be called")
 	}
 }
 
 func TestCreatePresentation_InvalidUUID(t *testing.T) {
 	store := &mockPresentationStore{
 		createFunc: func(ctx context.Context, id, title string) error {
-			t.Error("store.create should not be called")
+			t.Error("store.Create should not be called")
 			return nil
 		},
 	}
@@ -61,19 +64,19 @@ func TestCreatePresentation_InvalidUUID(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 
-	var payload ErrorResponse
+	var payload response.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatal("expected error JSON, got:", rec.Body.String())
 	}
-	if payload.Error.Code != errInvalidUUID {
-		t.Errorf("got code %q, want %q", payload.Error.Code, errInvalidUUID)
+	if payload.Error.Code != cfg.ErrInvalidUUID {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrInvalidUUID)
 	}
 }
 
 func TestCreatePresentation_EmptyTitle(t *testing.T) {
 	store := &mockPresentationStore{
 		createFunc: func(ctx context.Context, id, title string) error {
-			t.Error("store.create should not be called")
+			t.Error("store.Create should not be called")
 			return nil
 		},
 	}
@@ -89,19 +92,19 @@ func TestCreatePresentation_EmptyTitle(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 
-	var payload ErrorResponse
+	var payload response.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatal("expected error JSON, got:", rec.Body.String())
 	}
-	if payload.Error.Code != errMissingField {
-		t.Errorf("got code %q, want %q", payload.Error.Code, errMissingField)
+	if payload.Error.Code != cfg.ErrMissingField {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrMissingField)
 	}
 }
 
 func TestCreatePresentation_InvalidJSON(t *testing.T) {
 	store := &mockPresentationStore{
 		createFunc: func(ctx context.Context, id, title string) error {
-			t.Error("store.create should not be called")
+			t.Error("store.Create should not be called")
 			return nil
 		},
 	}
@@ -117,12 +120,12 @@ func TestCreatePresentation_InvalidJSON(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 
-	var payload ErrorResponse
+	var payload response.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatal("expected error JSON, got:", rec.Body.String())
 	}
-	if payload.Error.Code != errInvalidJSON {
-		t.Errorf("got code %q, want %q", payload.Error.Code, errInvalidJSON)
+	if payload.Error.Code != cfg.ErrInvalidJSON {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrInvalidJSON)
 	}
 }
 
@@ -163,11 +166,11 @@ func TestCreatePresentation_StoreError(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusInternalServerError)
 	}
 
-	var payload ErrorResponse
+	var payload response.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
 		t.Fatal("expected error JSON, got:", rec.Body.String())
 	}
-	if payload.Error.Code != errInternalError {
-		t.Errorf("got code %q, want %q", payload.Error.Code, errInternalError)
+	if payload.Error.Code != cfg.ErrInternalError {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrInternalError)
 	}
 }
