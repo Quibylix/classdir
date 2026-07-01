@@ -29,8 +29,14 @@ type Presentation struct {
 	Slides []Slide `json:"slides"`
 }
 
+type PresentationPreview struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
+
 func RegisterRoutes(mux *http.ServeMux, store Store) {
 	mux.HandleFunc("POST /api/v1/presentation", createPresentationHandler(store))
+	mux.HandleFunc("GET /api/v1/presentation", listPresentationHandler(store))
 	mux.HandleFunc("GET /api/v1/presentation/{"+pathKeyPresentationID+"}", getPresentationHandler(store))
 	mux.HandleFunc("PUT /api/v1/presentation/{"+pathKeyPresentationID+"}", updatePresentationHandler(store))
 	mux.HandleFunc("DELETE /api/v1/presentation/{"+pathKeyPresentationID+"}", deletePresentationHandler(store))
@@ -172,5 +178,22 @@ func deletePresentationHandler(store Store) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func listPresentationHandler(store Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		presentations, err := store.List(r.Context())
+		if err != nil {
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgListPresentation)
+			return
+		}
+
+		data, err := json.Marshal(presentations)
+		if err != nil {
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgListPresentation)
+			return
+		}
+		response.WriteJSON(w, http.StatusOK, data)
 	}
 }

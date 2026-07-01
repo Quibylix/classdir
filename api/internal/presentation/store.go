@@ -17,6 +17,7 @@ type Store interface {
 	GetByID(ctx context.Context, id string) (*Presentation, error)
 	UpdateTitle(ctx context.Context, id, title string) error
 	Delete(ctx context.Context, id string) error
+	List(ctx context.Context) ([]*PresentationPreview, error)
 }
 
 var ErrDuplicateKey = errors.New("duplicate key")
@@ -82,6 +83,35 @@ func (s *pgPresentationStore) GetByID(ctx context.Context, id string) (*Presenta
 	}
 
 	return &pres, nil
+}
+
+func (s *pgPresentationStore) List(ctx context.Context) ([]*PresentationPreview, error) {
+	ctx, cancel := context.WithTimeout(ctx, cfg.DbTimeout)
+	defer cancel()
+
+	rows, err := s.pool.Query(ctx, `SELECT id, title FROM presentations ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var presentations []*PresentationPreview
+	for rows.Next() {
+		var pres PresentationPreview
+		if err := rows.Scan(&pres.ID, &pres.Title); err != nil {
+			return nil, err
+		}
+		presentations = append(presentations, &pres)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if presentations == nil {
+		presentations = []*PresentationPreview{}
+	}
+
+	return presentations, nil
 }
 
 func (s *pgPresentationStore) UpdateTitle(ctx context.Context, id, title string) error {

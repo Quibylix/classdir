@@ -18,6 +18,7 @@ type mockPresentationStore struct {
 	getByIDFunc      func(ctx context.Context, id string) (*Presentation, error)
 	updateTitleFunc  func(ctx context.Context, id, title string) error
 	deleteFunc       func(ctx context.Context, id string) error
+	listFunc         func(ctx context.Context) ([]*PresentationPreview, error)
 }
 
 func (m *mockPresentationStore) Create(ctx context.Context, id, title string) error {
@@ -34,6 +35,10 @@ func (m *mockPresentationStore) UpdateTitle(ctx context.Context, id, title strin
 
 func (m *mockPresentationStore) Delete(ctx context.Context, id string) error {
 	return m.deleteFunc(ctx, id)
+}
+
+func (m *mockPresentationStore) List(ctx context.Context) ([]*PresentationPreview, error) {
+	return m.listFunc(ctx)
 }
 
 func TestCreatePresentation_ValidInput(t *testing.T) {
@@ -537,6 +542,64 @@ func TestDeletePresentation_StoreError(t *testing.T) {
 	handler := deletePresentationHandler(store)
 	req := httptest.NewRequest(http.MethodDelete, "/", nil)
 	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+
+	var payload response.ErrorResponse
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatal("expected error JSON, got:", rec.Body.String())
+	}
+	if payload.Error.Code != cfg.ErrInternalError {
+		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrInternalError)
+	}
+}
+
+func TestListPresentations_Success(t *testing.T) {
+	store := &mockPresentationStore{
+		listFunc: func(ctx context.Context) ([]*PresentationPreview, error) {
+			return []*PresentationPreview{
+				{ID: "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f", Title: "First"},
+				{ID: "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b80", Title: "Second"},
+			}, nil
+		},
+	}
+
+	handler := listPresentationHandler(store)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var payload struct {
+		Data []*PresentationPreview `json:"data"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatal("expected valid JSON, got:", rec.Body.String())
+	}
+	if len(payload.Data) != 2 {
+		t.Errorf("got %d presentations, want 2", len(payload.Data))
+	}
+	if payload.Data[0].Title != "First" {
+		t.Errorf("got title %q, want %q", payload.Data[0].Title, "First")
+	}
+}
+
+func TestListPresentations_StoreError(t *testing.T) {
+	store := &mockPresentationStore{
+		listFunc: func(ctx context.Context) ([]*PresentationPreview, error) {
+			return nil, errors.New("db error")
+		},
+	}
+
+	handler := listPresentationHandler(store)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 

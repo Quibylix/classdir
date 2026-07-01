@@ -33,6 +33,7 @@ const (
 	ErrMsgDeletePresentation = "failed to delete presentation"
 	ErrMsgNotFound          = "presentation not found"
 	ErrMsgDuplicateID       = "a presentation with this id already exists"
+	ErrMsgListPresentation  = "failed to list presentations"
 )
 
 const (
