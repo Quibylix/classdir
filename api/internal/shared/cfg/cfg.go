@@ -29,6 +29,8 @@ const (
 	ErrMsgInvalidToken       = "invalid or expired token"
 	ErrMsgCreatePresentation = "failed to create presentation"
 	ErrMsgGetPresentation   = "failed to retrieve presentation"
+	ErrMsgUpdatePresentation = "failed to update presentation"
+	ErrMsgDeletePresentation = "failed to delete presentation"
 	ErrMsgNotFound          = "presentation not found"
 	ErrMsgDuplicateID       = "a presentation with this id already exists"
 )

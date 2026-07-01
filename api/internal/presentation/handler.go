@@ -32,6 +32,8 @@ type Presentation struct {
 func RegisterRoutes(mux *http.ServeMux, store Store) {
 	mux.HandleFunc("POST /api/v1/presentation", createPresentationHandler(store))
 	mux.HandleFunc("GET /api/v1/presentation/{presentationId}", getPresentationHandler(store))
+	mux.HandleFunc("PUT /api/v1/presentation/{presentationId}", updatePresentationHandler(store))
+	mux.HandleFunc("DELETE /api/v1/presentation/{presentationId}", deletePresentationHandler(store))
 }
 
 func createPresentationHandler(store Store) http.HandlerFunc {
@@ -102,5 +104,73 @@ func getPresentationHandler(store Store) http.HandlerFunc {
 			return
 		}
 		response.WriteJSON(w, http.StatusOK, data)
+	}
+}
+
+func updatePresentationHandler(store Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("presentationId")
+
+		if !validate.IsValidUUIDv7(id) {
+			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
+			return
+		}
+
+		var body struct {
+			Title string `json:"title"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidJSON, cfg.ErrMsgInvalidJSON)
+			return
+		}
+
+		if strings.TrimSpace(body.Title) == "" {
+			response.WriteError(w, http.StatusBadRequest, cfg.ErrMissingField, cfg.ErrMsgMissingTitle)
+			return
+		}
+
+		if err := store.UpdateTitle(r.Context(), id, body.Title); err != nil {
+			if errors.Is(err, ErrNotFound) {
+				response.WriteError(w, http.StatusNotFound, cfg.ErrNotFound, cfg.ErrMsgNotFound)
+				return
+			}
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgUpdatePresentation)
+			return
+		}
+
+		pres, err := store.GetByID(r.Context(), id)
+		if err != nil {
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgUpdatePresentation)
+			return
+		}
+
+		data, err := json.Marshal(pres)
+		if err != nil {
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgUpdatePresentation)
+			return
+		}
+		response.WriteJSON(w, http.StatusOK, data)
+	}
+}
+
+func deletePresentationHandler(store Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("presentationId")
+
+		if !validate.IsValidUUIDv7(id) {
+			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
+			return
+		}
+
+		if err := store.Delete(r.Context(), id); err != nil {
+			if errors.Is(err, ErrNotFound) {
+				response.WriteError(w, http.StatusNotFound, cfg.ErrNotFound, cfg.ErrMsgNotFound)
+				return
+			}
+			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgDeletePresentation)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

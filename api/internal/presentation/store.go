@@ -15,9 +15,12 @@ import (
 type Store interface {
 	Create(ctx context.Context, id, title string) error
 	GetByID(ctx context.Context, id string) (*Presentation, error)
+	UpdateTitle(ctx context.Context, id, title string) error
+	Delete(ctx context.Context, id string) error
 }
 
 var ErrDuplicateKey = errors.New("duplicate key")
+var ErrNotFound = errors.New("not found")
 
 type pgPresentationStore struct {
 	pool *pgxpool.Pool
@@ -79,4 +82,30 @@ func (s *pgPresentationStore) GetByID(ctx context.Context, id string) (*Presenta
 	}
 
 	return &pres, nil
+}
+
+func (s *pgPresentationStore) UpdateTitle(ctx context.Context, id, title string) error {
+	ctx, cancel := context.WithTimeout(ctx, cfg.DbTimeout)
+	defer cancel()
+	tag, err := s.pool.Exec(ctx, `UPDATE presentations SET title = $1, updated_at = NOW() WHERE id = $2`, title, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (s *pgPresentationStore) Delete(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, cfg.DbTimeout)
+	defer cancel()
+	tag, err := s.pool.Exec(ctx, `DELETE FROM presentations WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
