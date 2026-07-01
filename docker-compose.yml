@@ -15,8 +15,11 @@ services:
       - "8080:8080"
 
   client:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: ""
     depends_on:
       - api
     ports:
-      - "3000:80"
+      - "3000:8080"

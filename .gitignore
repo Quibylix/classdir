@@ -9,6 +9,7 @@
 # Node
 /client/node_modules/
 /client/dist/
+.pnpm-store/
 
 # IDE
 .idea/
