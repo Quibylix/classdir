@@ -16,6 +16,7 @@ import (
 func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/auth/login", loginHandler)
 	mux.HandleFunc("POST /api/v1/auth/logout", logoutHandler)
+	mux.HandleFunc("GET /api/v1/auth/check", checkAuthHandler)
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,5 +71,24 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   -1,
 	})
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func checkAuthHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(cfg.CookieName)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	secret := os.Getenv(cfg.EnvJWTSecret)
+	token, err := jwt.ParseWithClaims(cookie.Value, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+		return []byte(secret), nil
+	})
+	if err != nil || !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

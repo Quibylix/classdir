@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"classdir/api/internal/shared/cfg"
 	"classdir/api/internal/shared/response"
@@ -15,6 +18,7 @@ func setupMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/auth/login", loginHandler)
 	mux.HandleFunc("POST /api/v1/auth/logout", logoutHandler)
+	mux.HandleFunc("GET /api/v1/auth/check", checkAuthHandler)
 	return mux
 }
 
@@ -161,5 +165,56 @@ func TestLogoutHandler(t *testing.T) {
 	}
 	if token.Value != "" {
 		t.Error("expected empty token value")
+	}
+}
+
+func TestCheckAuthHandler_ValidToken(t *testing.T) {
+	t.Setenv(cfg.EnvJWTSecret, "testsecret")
+
+	now := time.Now()
+	claims := jwt.RegisteredClaims{
+		Subject:   cfg.JwtSubject,
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(cfg.JwtExpiry)),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte("testsecret"))
+	if err != nil {
+		t.Fatal("failed to sign token:", err)
+	}
+
+	mux := setupMux()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
+	req.AddCookie(&http.Cookie{Name: cfg.CookieName, Value: signed})
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusNoContent)
+	}
+}
+
+func TestCheckAuthHandler_NoCookie(t *testing.T) {
+	mux := setupMux()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestCheckAuthHandler_InvalidToken(t *testing.T) {
+	t.Setenv(cfg.EnvJWTSecret, "testsecret")
+
+	mux := setupMux()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
+	req.AddCookie(&http.Cookie{Name: cfg.CookieName, Value: "not-a-valid-token"})
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 }
