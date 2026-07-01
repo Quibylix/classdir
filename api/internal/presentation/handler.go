@@ -31,9 +31,9 @@ type Presentation struct {
 
 func RegisterRoutes(mux *http.ServeMux, store Store) {
 	mux.HandleFunc("POST /api/v1/presentation", createPresentationHandler(store))
-	mux.HandleFunc("GET /api/v1/presentation/{presentationId}", getPresentationHandler(store))
-	mux.HandleFunc("PUT /api/v1/presentation/{presentationId}", updatePresentationHandler(store))
-	mux.HandleFunc("DELETE /api/v1/presentation/{presentationId}", deletePresentationHandler(store))
+	mux.HandleFunc("GET /api/v1/presentation/{"+pathKeyPresentationID+"}", getPresentationHandler(store))
+	mux.HandleFunc("PUT /api/v1/presentation/{"+pathKeyPresentationID+"}", updatePresentationHandler(store))
+	mux.HandleFunc("DELETE /api/v1/presentation/{"+pathKeyPresentationID+"}", deletePresentationHandler(store))
 }
 
 func createPresentationHandler(store Store) http.HandlerFunc {
@@ -81,7 +81,7 @@ func createPresentationHandler(store Store) http.HandlerFunc {
 
 func getPresentationHandler(store Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("presentationId")
+		id := r.PathValue(pathKeyPresentationID)
 
 		if !validate.IsValidUUIDv7(id) {
 			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
@@ -109,7 +109,7 @@ func getPresentationHandler(store Store) http.HandlerFunc {
 
 func updatePresentationHandler(store Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("presentationId")
+		id := r.PathValue(pathKeyPresentationID)
 
 		if !validate.IsValidUUIDv7(id) {
 			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
@@ -155,7 +155,7 @@ func updatePresentationHandler(store Store) http.HandlerFunc {
 
 func deletePresentationHandler(store Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("presentationId")
+		id := r.PathValue(pathKeyPresentationID)
 
 		if !validate.IsValidUUIDv7(id) {
 			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)

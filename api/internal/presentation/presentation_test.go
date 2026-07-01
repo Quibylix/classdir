@@ -205,7 +205,7 @@ func TestGetPresentation_Found(t *testing.T) {
 
 	handler := getPresentationHandler(store)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -236,7 +236,7 @@ func TestGetPresentation_NotFound(t *testing.T) {
 
 	handler := getPresentationHandler(store)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -263,7 +263,7 @@ func TestGetPresentation_InvalidUUID(t *testing.T) {
 
 	handler := getPresentationHandler(store)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.SetPathValue("presentationId", "bad")
+	req.SetPathValue(pathKeyPresentationID, "bad")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -296,7 +296,7 @@ func TestUpdatePresentation_Valid(t *testing.T) {
 	body := `{"title":"Updated"}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -320,7 +320,7 @@ func TestUpdatePresentation_InvalidUUID(t *testing.T) {
 	body := `{"title":"Updated"}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetPathValue("presentationId", "bad")
+	req.SetPathValue(pathKeyPresentationID, "bad")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -349,7 +349,7 @@ func TestUpdatePresentation_EmptyTitle(t *testing.T) {
 	body := `{"title":"  "}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -378,7 +378,7 @@ func TestUpdatePresentation_InvalidJSON(t *testing.T) {
 	body := `{bad`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -406,7 +406,7 @@ func TestUpdatePresentation_NotFound(t *testing.T) {
 	body := `{"title":"Updated"}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -434,7 +434,7 @@ func TestUpdatePresentation_StoreError(t *testing.T) {
 	body := `{"title":"Updated"}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -462,7 +462,7 @@ func TestDeletePresentation_Valid(t *testing.T) {
 
 	handler := deletePresentationHandler(store)
 	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -484,7 +484,7 @@ func TestDeletePresentation_InvalidUUID(t *testing.T) {
 
 	handler := deletePresentationHandler(store)
 	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	req.SetPathValue("presentationId", "bad")
+	req.SetPathValue(pathKeyPresentationID, "bad")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -510,7 +510,7 @@ func TestDeletePresentation_NotFound(t *testing.T) {
 
 	handler := deletePresentationHandler(store)
 	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -536,7 +536,7 @@ func TestDeletePresentation_StoreError(t *testing.T) {
 
 	handler := deletePresentationHandler(store)
 	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	req.SetPathValue("presentationId", "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
