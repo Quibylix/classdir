@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Box, Button, Center, Loader, Paper, PasswordInput, Stack, Title } from '@mantine/core'
 import { PresentationIcon } from '@phosphor-icons/react/dist/csr/Presentation'
 import { useAuth } from '../hooks/useAuth'
+import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
+import { ERR_AUTH_INVALID_PASSWORD, ERR_AUTH_CONNECTION } from '../../shared/cfg/messages'
 
 export function LandingPage() {
   const { isAuthenticated, isLoading, checkAuth, login, logout } = useAuth()
@@ -16,8 +18,8 @@ export function LandingPage() {
     setLoggingIn(true)
     setError('')
     const result = await login(password)
-    if (result === 'invalid') setError('Invalid password')
-    else if (result === 'error') setError('Could not connect to server')
+    if (result === 'invalid') setError(ERR_AUTH_INVALID_PASSWORD)
+    else if (result === 'error') setError(ERR_AUTH_CONNECTION)
     setLoggingIn(false)
   }
 
@@ -36,7 +38,7 @@ export function LandingPage() {
           <Stack align="center" gap="md">
             <PresentationIcon size="48" />
             <Title>ClassDir</Title>
-            <Button component="a" href="/configure" size="lg">
+            <Button component="a" href={CLIENT_CONFIGURE} size="lg">
               Go to Dashboard
             </Button>
             <Button variant="subtle" onClick={logout}>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../../shared/api/client'
+import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from '../../shared/cfg/routes'
 
 export type LoginResult = 'ok' | 'invalid' | 'error'
 
@@ -10,7 +11,7 @@ export function useAuth() {
   async function checkAuth(): Promise<void> {
     setIsLoading(true)
     try {
-      const res = await api('/api/v1/auth/check')
+      const res = await api(AUTH_CHECK)
       setIsAuthenticated(res.ok)
     } catch {
       setIsAuthenticated(false)
@@ -21,7 +22,7 @@ export function useAuth() {
 
   async function login(password: string): Promise<LoginResult> {
     try {
-      const res = await api('/api/v1/auth/login', {
+      const res = await api(AUTH_LOGIN, {
         method: 'POST',
         body: JSON.stringify({ password }),
       })
@@ -36,7 +37,7 @@ export function useAuth() {
   }
 
   async function logout(): Promise<void> {
-    await api('/api/v1/auth/logout', { method: 'POST' })
+    await api(AUTH_LOGOUT, { method: 'POST' })
     setIsAuthenticated(false)
   }
 
