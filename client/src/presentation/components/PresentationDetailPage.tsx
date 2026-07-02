@@ -1,15 +1,28 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router'
-import { Box, Button, Card, Center, Group, Loader, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Box, Button, Center, Group, Loader, Stack, Text, TextInput, Title } from '@mantine/core'
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft'
+import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight'
+import { PlusIcon } from '@phosphor-icons/react/dist/csr/Plus'
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
 import { usePresentation } from '../hooks/usePresentation'
+import { useSlides } from '../hooks/useSlides'
 import { deletePresentation } from '../api'
 import { DeleteModal } from './DeleteModal'
+import { SlideEditor } from './SlideEditor'
 
 export function PresentationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const { presentation, isLoading, isSaving, error, updateTitle } = usePresentation(id ?? "")
+  const {
+    slides, currentSlide, currentIndex,
+    isAdding, isSaving: isSlideSaving, isDeleting: isSlideDeleting,
+    error: slidesError,
+    addSlide, saveSlide, removeSlide, goToSlide,
+  } = useSlides(id ?? "", presentation?.slides)
+
   const [editTitle, setEditTitle] = useState('')
   const [editing, setEditing] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -51,7 +64,7 @@ export function PresentationDetailPage() {
     setEditing(true)
   }
 
-  function handleSave() {
+  function handleSaveTitle() {
     if (!editTitle.trim()) return
     updateTitle(editTitle.trim())
     setEditing(false)
@@ -66,18 +79,24 @@ export function PresentationDetailPage() {
     )
   }
 
+  if (!presentation) return null
+
   return (
-    <Box p="xl" maw={800} mx="auto">
-      <Group justify="space-between" mb="lg">
-        <Button component={Link} to="/configure" variant="subtle">
-          &larr; Back
-        </Button>
-        <Button color="red" onClick={() => setDeleteModalOpen(true)}>Delete Presentation</Button>
+    <Stack h="100vh" p="md" gap="sm">
+      <Group justify="space-between">
+        <Group>
+          <Button component={Link} to="/configure" variant="subtle">
+            &larr; Back
+          </Button>
+        </Group>
+        <Group>
+          <Button color="red" onClick={() => setDeleteModalOpen(true)}>Delete Presentation</Button>
+        </Group>
       </Group>
 
       {editing ? (
-        <form onSubmit={(e) => { e.preventDefault(); handleSave() }}>
-          <Group mb="lg">
+        <form onSubmit={(e) => { e.preventDefault(); handleSaveTitle() }}>
+          <Group>
             <TextInput
               value={editTitle}
               onChange={(e) => setEditTitle(e.currentTarget.value)}
@@ -89,11 +108,81 @@ export function PresentationDetailPage() {
           </Group>
         </form>
       ) : (
-        <Group mb="lg" justify="space-between">
-          <Title>{presentation.title}</Title>
-          <Button variant="subtle" onClick={handleEditStart}>Edit</Button>
+        <Group justify="space-between">
+          <Group>
+            <Title>{presentation.title}</Title>
+            <Button variant="subtle" onClick={handleEditStart}>Edit</Button>
+          </Group>
         </Group>
       )}
+
+      {slidesError && (
+        <Text c="red" size="sm">{slidesError.message}</Text>
+      )}
+
+      <Group justify="space-between">
+        <Group>
+          <Button
+            variant="default"
+            onClick={() => goToSlide(currentIndex - 1)}
+            disabled={currentIndex <= 0}
+            px="xs"
+          >
+            <CaretLeftIcon size={16} />
+          </Button>
+          <Text size="sm" c="dimmed">
+            {slides.length > 0 ? `${currentIndex + 1} / ${slides.length}` : '0 / 0'}
+          </Text>
+          <Button
+            variant="default"
+            onClick={() => goToSlide(currentIndex + 1)}
+            disabled={currentIndex >= slides.length - 1}
+            px="xs"
+          >
+            <CaretRightIcon size={16} />
+          </Button>
+        </Group>
+        <Group>
+          <Button
+            leftSection={<PlusIcon size={16} />}
+            onClick={addSlide}
+            loading={isAdding}
+            disabled={isAdding}
+          >
+            Add Slide
+          </Button>
+          <Button
+            leftSection={<TrashIcon size={16} />}
+            color="red"
+            variant="outline"
+            onClick={() => removeSlide(currentIndex)}
+            loading={isSlideDeleting}
+            disabled={!currentSlide || isSlideDeleting}
+          >
+            Delete Slide
+          </Button>
+        </Group>
+      </Group>
+
+      <Box style={{ flex: 1, minHeight: 0 }}>
+        {currentSlide ? (
+          <SlideEditor
+            slides={slides}
+            currentIndex={currentIndex}
+            onSave={saveSlide}
+            isSaving={isSlideSaving}
+          />
+        ) : (
+          <Center h="100%">
+            <Stack align="center" gap="md">
+              <Text c="dimmed">No slides yet</Text>
+              <Button onClick={addSlide} loading={isAdding} disabled={isAdding}>
+                Add your first slide
+              </Button>
+            </Stack>
+          </Center>
+        )}
+      </Box>
 
       <DeleteModal
         opened={deleteModalOpen}
@@ -102,19 +191,6 @@ export function PresentationDetailPage() {
         title={presentation.title}
         isLoading={isDeleting}
       />
-
-      <Title order={3} mb="md">Slides</Title>
-      {presentation.slides.length === 0 ? (
-        <Text c="dimmed">No slides yet</Text>
-      ) : (
-        <Stack>
-          {presentation.slides.map((slide) => (
-            <Card key={slide.id} shadow="sm" padding="md" radius="md">
-              <Text>{slide.content}</Text>
-            </Card>
-          ))}
-        </Stack>
-      )}
-    </Box>
+    </Stack>
   )
 }

@@ -4,8 +4,8 @@ import { uuidv7 } from '../../shared/util/uuid'
 import type { Slide } from '../types'
 import type { FetchError } from '../../shared/api/fetch'
 
-export function useSlides(presId: string, initialSlides: Slide[]) {
-  const [slides, setSlides] = useState<Slide[]>(initialSlides)
+export function useSlides(presId: string, initialSlides?: Slide[]) {
+  const [slides, setSlides] = useState<Slide[]>(initialSlides ?? [])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAdding, setIsAdding] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -13,7 +13,7 @@ export function useSlides(presId: string, initialSlides: Slide[]) {
   const [error, setError] = useState<FetchError | null>(null)
 
   useEffect(() => {
-    setSlides(initialSlides)
+    setSlides(initialSlides ?? [])
   }, [initialSlides])
 
   useEffect(() => {
