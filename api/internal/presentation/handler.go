@@ -34,6 +34,12 @@ func RegisterRoutes(mux *http.ServeMux, store Store) {
 	mux.HandleFunc("GET /api/v1/presentation/{"+pathKeyPresentationID+"}", getPresentationHandler(store))
 	mux.HandleFunc("PUT /api/v1/presentation/{"+pathKeyPresentationID+"}", updatePresentationHandler(store))
 	mux.HandleFunc("DELETE /api/v1/presentation/{"+pathKeyPresentationID+"}", deletePresentationHandler(store))
+
+	prefix := "/api/v1/presentation/{" + pathKeyPresentationID + "}/slides"
+	mux.HandleFunc("POST "+prefix, createSlideHandler(store))
+	mux.HandleFunc("GET "+prefix+"/{"+pathKeySlideID+"}", getSlideHandler(store))
+	mux.HandleFunc("PUT "+prefix+"/{"+pathKeySlideID+"}", updateSlideHandler(store))
+	mux.HandleFunc("DELETE "+prefix+"/{"+pathKeySlideID+"}", deleteSlideHandler(store))
 }
 
 func createPresentationHandler(store Store) http.HandlerFunc {
