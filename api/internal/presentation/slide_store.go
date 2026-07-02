@@ -24,7 +24,7 @@ func (s *pgPresentationStore) CreateSlide(ctx context.Context, presID, slideID, 
 		return err
 	}
 
-	_, err = tx.Exec(ctx, `UPDATE presentations SET slide_order = slide_order || $2, updated_at = NOW() WHERE id = $1`, presID, slideID)
+	_, err = tx.Exec(ctx, `UPDATE presentations SET slide_order = slide_order || $2, updated_at = NOW() WHERE id = $1`, presID, []string{slideID})
 	if err != nil {
 		return err
 	}
