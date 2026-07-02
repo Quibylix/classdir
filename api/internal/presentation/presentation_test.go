@@ -19,6 +19,10 @@ type mockPresentationStore struct {
 	updateTitleFunc  func(ctx context.Context, id, title string) error
 	deleteFunc       func(ctx context.Context, id string) error
 	listFunc         func(ctx context.Context) ([]*PresentationPreview, error)
+	createSlideFunc  func(ctx context.Context, presID, slideID, content string) error
+	getSlideFunc     func(ctx context.Context, presID, slideID string) (*Slide, error)
+	updateSlideFunc  func(ctx context.Context, presID, slideID, content string) error
+	deleteSlideFunc  func(ctx context.Context, presID, slideID string) error
 }
 
 func (m *mockPresentationStore) Create(ctx context.Context, id, title string) error {
@@ -39,6 +43,22 @@ func (m *mockPresentationStore) Delete(ctx context.Context, id string) error {
 
 func (m *mockPresentationStore) List(ctx context.Context) ([]*PresentationPreview, error) {
 	return m.listFunc(ctx)
+}
+
+func (m *mockPresentationStore) CreateSlide(ctx context.Context, presID, slideID, content string) error {
+	return m.createSlideFunc(ctx, presID, slideID, content)
+}
+
+func (m *mockPresentationStore) GetSlide(ctx context.Context, presID, slideID string) (*Slide, error) {
+	return m.getSlideFunc(ctx, presID, slideID)
+}
+
+func (m *mockPresentationStore) UpdateSlide(ctx context.Context, presID, slideID, content string) error {
+	return m.updateSlideFunc(ctx, presID, slideID, content)
+}
+
+func (m *mockPresentationStore) DeleteSlide(ctx context.Context, presID, slideID string) error {
+	return m.deleteSlideFunc(ctx, presID, slideID)
 }
 
 func TestCreatePresentation_ValidInput(t *testing.T) {

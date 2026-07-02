@@ -17,6 +17,10 @@ type Store interface {
 	UpdateTitle(ctx context.Context, id, title string) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]*PresentationPreview, error)
+	CreateSlide(ctx context.Context, presID, slideID, content string) error
+	GetSlide(ctx context.Context, presID, slideID string) (*Slide, error)
+	UpdateSlide(ctx context.Context, presID, slideID, content string) error
+	DeleteSlide(ctx context.Context, presID, slideID string) error
 }
 
 var ErrDuplicateKey = errors.New("duplicate key")
