@@ -1,6 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { EditorView, basicSetup } from 'codemirror'
-import { html } from '@codemirror/lang-html'
+import type { EditorView } from 'codemirror'
 import { Box, Button, Group, Paper, Stack } from '@mantine/core'
 import type { Slide } from '../types'
 
@@ -48,25 +47,45 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
   const lastPropContentRef = useRef(currentPropContent)
 
   useEffect(() => {
-    if (!editorRef.current) return
+    let isMounted = true;
 
-    const view = new EditorView({
-      doc: content,
-      extensions: [
-        basicSetup,
-        html(),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            setContent(update.state.doc.toString())
-          }
-        }),
-      ],
-      parent: editorRef.current,
-    })
-    viewRef.current = view
+    async function loadCodeMirror() {
+      if (!editorRef.current) return;
 
-    return () => view.destroy()
-  }, [])
+      const { EditorView, basicSetup } = await import('codemirror');
+      const { html } = await import('@codemirror/lang-html');
+
+      if (!isMounted) return;
+
+      if (editorRef.current) {
+        editorRef.current.innerHTML = '';
+      }
+
+      const view = new EditorView({
+        doc: content,
+        extensions: [
+          basicSetup,
+          html(),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              setContent(update.state.doc.toString());
+            }
+          }),
+        ],
+        parent: editorRef.current,
+      });
+
+      viewRef.current = view;
+    }
+
+    loadCodeMirror();
+
+    return () => {
+      isMounted = false;
+      viewRef.current?.destroy();
+      viewRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const view = viewRef.current
