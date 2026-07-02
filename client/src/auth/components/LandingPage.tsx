@@ -1,18 +1,25 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
-import { Box, Button, Center, Loader, Paper, PasswordInput, Stack, Title } from '@mantine/core'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
+import { Box, Button, Center, Paper, PasswordInput, Stack, Title } from '@mantine/core'
 import { PresentationIcon } from '@phosphor-icons/react/dist/csr/Presentation'
 import { useAuth } from '../hooks/useAuth'
 import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { ERR_AUTH_INVALID_PASSWORD, ERR_AUTH_CONNECTION } from '../../shared/cfg/messages'
 
 export function LandingPage() {
-  const { isAuthenticated, isLoading, login, logout } = useAuth()
+  const { isAuthenticated, isLoading, login } = useAuth()
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
+  const navigate = useNavigate();
 
-  async function handleLogin(e: React.FormEvent) {
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate(CLIENT_CONFIGURE)
+    }
+  }, [isLoading, isAuthenticated, navigate])
+
+  async function handleLogin(e: React.SubmitEvent) {
     e.preventDefault()
     if (!password) return
     setLoggingIn(true)
@@ -23,34 +30,7 @@ export function LandingPage() {
     setLoggingIn(false)
   }
 
-  if (isLoading) {
-    return (
-      <Center h="100vh">
-        <Loader />
-      </Center>
-    )
-  }
-
-  if (isAuthenticated) {
-    return (
-      <Box h="100vh" bg="gray.0">
-        <Center h="100vh">
-          <Stack align="center" gap="md">
-            <PresentationIcon size="48" />
-            <Title>ClassDir</Title>
-            <Button component={Link} to={CLIENT_CONFIGURE} size="lg">
-              Go to Dashboard
-            </Button>
-            <Button variant="subtle" onClick={logout}>
-              Logout
-            </Button>
-          </Stack>
-        </Center>
-      </Box>
-    )
-  }
-
-  return (
+  return isAuthenticated ? null : (
     <Box h="100vh" bg="gray.0">
       <Center h="100vh">
         <Paper shadow="md" p="xl" radius="md" maw={400} w="100%">
