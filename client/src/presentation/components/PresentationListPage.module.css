@@ -1,0 +1,13 @@
+.card {
+  position: relative;
+}
+
+.titleLink {
+  color: var(--mantine-color-text);
+}
+
+.titleLink:before {
+  position: absolute;
+  content: "";
+  inset: 0;
+}
