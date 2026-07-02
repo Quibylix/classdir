@@ -10,7 +10,7 @@ Requests to the API require authentication via a JWT token. The token must be se
 
 ### Auth
 
-- [ ] `POST /api/v1/auth/login`: Authenticates the user with the configured password.
+- [x] `POST /api/v1/auth/login`: Authenticates the user with the configured password.
   - Request Body:
   ```json
   {
@@ -26,14 +26,14 @@ Requests to the API require authentication via a JWT token. The token must be se
   }
   ```
 
-- [ ] `POST /api/v1/auth/logout`: Logs out by clearing the authentication cookie.
+- [x] `POST /api/v1/auth/logout`: Logs out by clearing the authentication cookie.
   - Response: Clears the JWT cookie.
 
 ## Configuration Endpoints
 
 ### Presentation Management
 
-- [ ] `POST /api/v1/presentation`: Creates a new blank presentation.
+- [x] `POST /api/v1/presentation`: Creates a new blank presentation.
   - Request Body:
   ```json
   {
@@ -52,7 +52,7 @@ Requests to the API require authentication via a JWT token. The token must be se
   }
   ```
 
-- [ ] `GET /api/v1/presentation/:presentationId`: Retrieves the details of a specific presentation, including its slides.
+- [x] `GET /api/v1/presentation/:presentationId`: Retrieves the details of a specific presentation, including its slides.
   - Response: Returns the presentation object with its slides.
   ```json
   {
@@ -74,7 +74,7 @@ Requests to the API require authentication via a JWT token. The token must be se
   }
   ```
 
-- [ ] `PUT /api/v1/presentation/:presentationId`: Updates the title of the specified presentation.
+- [x] `PUT /api/v1/presentation/:presentationId`: Updates the title of the specified presentation.
   - Request Body:
   ```json
   {
@@ -102,7 +102,7 @@ Requests to the API require authentication via a JWT token. The token must be se
   }
   ```
 
-- [ ] `DELETE /api/v1/presentation/:presentationId`: Deletes the specified presentation and all its slides.
+- [x] `DELETE /api/v1/presentation/:presentationId`: Deletes the specified presentation and all its slides.
   - Response: Returns an http status code indicating success or failure.
 
 ### Slide Management
