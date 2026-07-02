@@ -12,7 +12,7 @@ type SlideEditorProps = {
 }
 
 function buildPreviewHtml(allSlides: Slide[], targetIndex: number): string {
-  const slidesHtml = allSlides.map((s) => s.content).join('\n')
+  const slidesHtml = allSlides.map((s) => `<section>${s.content}</section>`).join('\n')
   return `<!DOCTYPE html>
 <html>
 <head>

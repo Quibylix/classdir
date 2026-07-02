@@ -26,7 +26,7 @@ export function useSlides(presId: string, initialSlides?: Slide[]) {
     setIsAdding(true)
     setError(null)
     const id = uuidv7()
-    createSlide(presId, id, '<section><h1>New Slide</h1></section>').match(
+    createSlide(presId, id, '<h1>New Slide</h1>').match(
       (slide) => {
         setSlides(prev => [...prev, slide])
         setCurrentIndex(slides.length)
