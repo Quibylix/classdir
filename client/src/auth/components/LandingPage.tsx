@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { Box, Button, Center, Loader, Paper, PasswordInput, Stack, Title } from '@mantine/core'
 import { PresentationIcon } from '@phosphor-icons/react/dist/csr/Presentation'
@@ -7,12 +7,10 @@ import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { ERR_AUTH_INVALID_PASSWORD, ERR_AUTH_CONNECTION } from '../../shared/cfg/messages'
 
 export function LandingPage() {
-  const { isAuthenticated, isLoading, checkAuth, login, logout } = useAuth()
+  const { isAuthenticated, isLoading, login, logout } = useAuth()
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
-
-  useEffect(() => { checkAuth() }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
