@@ -8,3 +8,5 @@ export const CLIENT_CONFIGURE = '/configure'
 
 export const PRESENTATIONS = `${API_PREFIX}/presentation`
 export const presentationById = (id: string) => `${API_PREFIX}/presentation/${id}`
+export const presentationSlides = (presId: string) => `${API_PREFIX}/presentation/${presId}/slides`
+export const slideById = (presId: string, slideId: string) => `${API_PREFIX}/presentation/${presId}/slides/${slideId}`

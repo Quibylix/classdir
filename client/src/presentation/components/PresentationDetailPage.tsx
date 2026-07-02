@@ -110,9 +110,6 @@ export function PresentationDetailPage() {
         <Stack>
           {presentation.slides.map((slide) => (
             <Card key={slide.id} shadow="sm" padding="md" radius="md">
-              <Text fw={500} size="sm" c="dimmed" mb="xs">
-                Slide {slide.slide_number}
-              </Text>
               <Text>{slide.content}</Text>
             </Card>
           ))}
