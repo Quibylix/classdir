@@ -12,25 +12,27 @@ type SlideEditorProps = {
 }
 
 function buildPreviewHtml(allSlides: Slide[], targetIndex: number): string {
-  const slidesHtml = allSlides.map((s) => `<section>${s.content}</section>`).join('\n')
+  const slidesHtml = allSlides.map((s) => s.content).join('\n')
   return `<!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/theme/black.css">
 </head>
 <body>
-  <div class="reveal">
+  <div class="reveal" id="reveal" style="opacity: 0;">
     <div class="slides">
 ${slidesHtml}
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"><\/script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.js"></script>
   <script>
-    Reveal.initialize({ embedded: true }).then(() => {
+    Reveal.initialize({transition: 'none', progress: false}).then(() => {
       Reveal.slide(${targetIndex});
+      Reveal.configure({ transition: 'slide'})
+      document.getElementById('reveal').style.opacity = '1';
     });
-  <\/script>
+  </script>
 </body>
 </html>`
 }
@@ -40,7 +42,10 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
   const viewRef = useRef<EditorView | null>(null)
   const previewRef = useRef<HTMLIFrameElement>(null)
   const [content, setContent] = useState(() => slides[currentIndex]?.content ?? '')
-  const [previewKey, setPreviewKey] = useState(0)
+
+  const lastIndexRef = useRef(currentIndex)
+  const currentPropContent = slides[currentIndex]?.content ?? ''
+  const lastPropContentRef = useRef(currentPropContent)
 
   useEffect(() => {
     if (!editorRef.current) return
@@ -66,21 +71,27 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
-    const newContent = slides[currentIndex]?.content ?? ''
-    if (view.state.doc.toString() !== newContent) {
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: newContent },
-      })
+
+    const hasSlideChanged = currentIndex !== lastIndexRef.current
+    const hasPropContentChanged = currentPropContent !== lastPropContentRef.current
+
+    if (hasSlideChanged || hasPropContentChanged) {
+      lastIndexRef.current = currentIndex
+      lastPropContentRef.current = currentPropContent
+
+      setContent(currentPropContent)
+
+      if (view.state.doc.toString() !== currentPropContent) {
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: currentPropContent },
+        })
+      }
     }
-  }, [currentIndex, slides])
+  }, [currentIndex, currentPropContent])
 
   const handleSave = useCallback(() => {
     onSave(currentIndex, content)
   }, [onSave, currentIndex, content])
-
-  const handleRefresh = useCallback(() => {
-    setPreviewKey((k) => k + 1)
-  }, [])
 
   const previewHtml = buildPreviewHtml(slides, currentIndex)
 
@@ -91,16 +102,12 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
           <Button onClick={handleSave} loading={isSaving} disabled={isSaving}>
             Save
           </Button>
-          <Button variant="subtle" onClick={handleRefresh}>
-            Refresh Preview
-          </Button>
         </Group>
       </Group>
       <Group align="stretch" h="100%" gap="md">
-        <Paper ref={editorRef} flex={1} withBorder style={{ overflow: 'auto', minHeight: 400 }} />
-        <Box flex={1} style={{ minHeight: 400 }}>
+        <Paper ref={editorRef} flex={1} withBorder mih={400} style={{ overflow: 'auto' }} />
+        <Box flex={1} mih={400}>
           <iframe
-            key={previewKey}
             ref={previewRef}
             srcDoc={previewHtml}
             title="Slide Preview"
