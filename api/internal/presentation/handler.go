@@ -11,22 +11,16 @@ import (
 	"classdir/api/internal/shared/validate"
 )
 
-type SlideMetadata struct {
-	Title  string `json:"title"`
-	Author string `json:"author"`
-}
-
 type Slide struct {
-	ID          string        `json:"id"`
-	SlideNumber int           `json:"slide_number"`
-	Content     string        `json:"content"`
-	Metadata    SlideMetadata `json:"metadata"`
+	ID      string `json:"id"`
+	Content string `json:"content"`
 }
 
 type Presentation struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Slides []Slide `json:"slides"`
+	ID         string  `json:"id"`
+	Title      string  `json:"title"`
+	SlideOrder []string `json:"slide_order"`
+	Slides     []Slide `json:"slides"`
 }
 
 type PresentationPreview struct {
@@ -73,9 +67,10 @@ func createPresentationHandler(store Store) http.HandlerFunc {
 		}
 
 		data, err := json.Marshal(Presentation{
-			ID:     body.ID,
-			Title:  body.Title,
-			Slides: []Slide{},
+			ID:         body.ID,
+			Title:      body.Title,
+			SlideOrder: []string{},
+			Slides:     []Slide{},
 		})
 		if err != nil {
 			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgCreatePresentation)

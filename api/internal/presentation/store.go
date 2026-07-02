@@ -2,7 +2,6 @@ package presentation
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/jackc/pgx/v5"
@@ -34,7 +33,7 @@ func NewStore(pool *pgxpool.Pool) Store {
 func (s *pgPresentationStore) Create(ctx context.Context, id, title string) error {
 	ctx, cancel := context.WithTimeout(ctx, cfg.DbTimeout)
 	defer cancel()
-	_, err := s.pool.Exec(ctx, `INSERT INTO presentations (id, title) VALUES ($1, $2)`, id, title)
+	_, err := s.pool.Exec(ctx, `INSERT INTO presentations (id, title, slide_order) VALUES ($1, $2, '{}')`, id, title)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == cfg.PgErrUniqueViolation {
@@ -49,7 +48,7 @@ func (s *pgPresentationStore) GetByID(ctx context.Context, id string) (*Presenta
 	defer cancel()
 
 	var pres Presentation
-	err := s.pool.QueryRow(ctx, `SELECT id, title FROM presentations WHERE id = $1`, id).Scan(&pres.ID, &pres.Title)
+	err := s.pool.QueryRow(ctx, `SELECT id, title, slide_order FROM presentations WHERE id = $1`, id).Scan(&pres.ID, &pres.Title, &pres.SlideOrder)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -57,7 +56,11 @@ func (s *pgPresentationStore) GetByID(ctx context.Context, id string) (*Presenta
 		return nil, err
 	}
 
-	rows, err := s.pool.Query(ctx, `SELECT id, slide_number, content, metadata FROM slides WHERE presentation_id = $1 ORDER BY slide_number`, id)
+	if pres.SlideOrder == nil {
+		pres.SlideOrder = []string{}
+	}
+
+	rows, err := s.pool.Query(ctx, `SELECT s.id, s.content FROM slides s JOIN presentations p ON p.id = s.presentation_id WHERE s.presentation_id = $1 ORDER BY array_position(p.slide_order, s.id)`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +68,7 @@ func (s *pgPresentationStore) GetByID(ctx context.Context, id string) (*Presenta
 
 	for rows.Next() {
 		var slide Slide
-		var metadata json.RawMessage
-		if err := rows.Scan(&slide.ID, &slide.SlideNumber, &slide.Content, &metadata); err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(metadata, &slide.Metadata); err != nil {
+		if err := rows.Scan(&slide.ID, &slide.Content); err != nil {
 			return nil, err
 		}
 		pres.Slides = append(pres.Slides, slide)

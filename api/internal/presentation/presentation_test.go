@@ -202,7 +202,7 @@ func TestGetPresentation_Found(t *testing.T) {
 				ID:    id,
 				Title: "Test",
 				Slides: []Slide{
-					{ID: "s1", SlideNumber: 1, Content: "<h1>Hi</h1>", Metadata: SlideMetadata{Title: "Intro", Author: "Teacher"}},
+					{ID: "s1", Content: "<h1>Hi</h1>"},
 				},
 			}, nil
 		},
