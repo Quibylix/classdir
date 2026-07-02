@@ -16,7 +16,7 @@ import (
 type mockPresentationStore struct {
 	createFunc       func(ctx context.Context, id, title string) error
 	getByIDFunc      func(ctx context.Context, id string) (*Presentation, error)
-	updateTitleFunc  func(ctx context.Context, id, title string) error
+	updateFunc  func(ctx context.Context, id, title string, slideOrder []string) error
 	deleteFunc       func(ctx context.Context, id string) error
 	listFunc         func(ctx context.Context) ([]*PresentationPreview, error)
 	createSlideFunc  func(ctx context.Context, presID, slideID, content string) error
@@ -33,8 +33,8 @@ func (m *mockPresentationStore) GetByID(ctx context.Context, id string) (*Presen
 	return m.getByIDFunc(ctx, id)
 }
 
-func (m *mockPresentationStore) UpdateTitle(ctx context.Context, id, title string) error {
-	return m.updateTitleFunc(ctx, id, title)
+func (m *mockPresentationStore) Update(ctx context.Context, id, title string, slideOrder []string) error {
+	return m.updateFunc(ctx, id, title, slideOrder)
 }
 
 func (m *mockPresentationStore) Delete(ctx context.Context, id string) error {
@@ -308,7 +308,7 @@ func TestGetPresentation_InvalidUUID(t *testing.T) {
 func TestUpdatePresentation_Valid(t *testing.T) {
 	var called bool
 	store := &mockPresentationStore{
-		updateTitleFunc: func(ctx context.Context, id, title string) error {
+		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
 			called = true
 			return nil
 		},
@@ -335,7 +335,7 @@ func TestUpdatePresentation_Valid(t *testing.T) {
 
 func TestUpdatePresentation_InvalidUUID(t *testing.T) {
 	store := &mockPresentationStore{
-		updateTitleFunc: func(ctx context.Context, id, title string) error {
+		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
 			t.Error("store.UpdateTitle should not be called")
 			return nil
 		},
@@ -364,7 +364,7 @@ func TestUpdatePresentation_InvalidUUID(t *testing.T) {
 
 func TestUpdatePresentation_EmptyTitle(t *testing.T) {
 	store := &mockPresentationStore{
-		updateTitleFunc: func(ctx context.Context, id, title string) error {
+		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
 			t.Error("store.UpdateTitle should not be called")
 			return nil
 		},
@@ -393,7 +393,7 @@ func TestUpdatePresentation_EmptyTitle(t *testing.T) {
 
 func TestUpdatePresentation_InvalidJSON(t *testing.T) {
 	store := &mockPresentationStore{
-		updateTitleFunc: func(ctx context.Context, id, title string) error {
+		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
 			t.Error("store.UpdateTitle should not be called")
 			return nil
 		},
@@ -422,7 +422,7 @@ func TestUpdatePresentation_InvalidJSON(t *testing.T) {
 
 func TestUpdatePresentation_NotFound(t *testing.T) {
 	store := &mockPresentationStore{
-		updateTitleFunc: func(ctx context.Context, id, title string) error {
+		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
 			return ErrNotFound
 		},
 	}
@@ -450,7 +450,7 @@ func TestUpdatePresentation_NotFound(t *testing.T) {
 
 func TestUpdatePresentation_StoreError(t *testing.T) {
 	store := &mockPresentationStore{
-		updateTitleFunc: func(ctx context.Context, id, title string) error {
+		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
 			return errors.New("db error")
 		},
 	}

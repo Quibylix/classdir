@@ -14,7 +14,7 @@ import (
 type Store interface {
 	Create(ctx context.Context, id, title string) error
 	GetByID(ctx context.Context, id string) (*Presentation, error)
-	UpdateTitle(ctx context.Context, id, title string) error
+	Update(ctx context.Context, id, title string, slideOrder []string) error
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context) ([]*PresentationPreview, error)
 	CreateSlide(ctx context.Context, presID, slideID, content string) error
@@ -25,6 +25,7 @@ type Store interface {
 
 var ErrDuplicateKey = errors.New("duplicate key")
 var ErrNotFound = errors.New("not found")
+var ErrInvalidSlideOrder = errors.New("invalid slide order")
 
 type pgPresentationStore struct {
 	pool *pgxpool.Pool
@@ -117,9 +118,30 @@ func (s *pgPresentationStore) List(ctx context.Context) ([]*PresentationPreview,
 	return presentations, nil
 }
 
-func (s *pgPresentationStore) UpdateTitle(ctx context.Context, id, title string) error {
+func (s *pgPresentationStore) Update(ctx context.Context, id, title string, slideOrder []string) error {
 	ctx, cancel := context.WithTimeout(ctx, cfg.DbTimeout)
 	defer cancel()
+
+	if slideOrder != nil {
+		var count int
+		err := s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM slides WHERE presentation_id = $1 AND id = ANY($2)`, id, slideOrder).Scan(&count)
+		if err != nil {
+			return err
+		}
+		if count != len(slideOrder) {
+			return ErrInvalidSlideOrder
+		}
+
+		tag, err := s.pool.Exec(ctx, `UPDATE presentations SET title = $1, slide_order = $2, updated_at = NOW() WHERE id = $3`, title, slideOrder, id)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		return nil
+	}
+
 	tag, err := s.pool.Exec(ctx, `UPDATE presentations SET title = $1, updated_at = NOW() WHERE id = $2`, title, id)
 	if err != nil {
 		return err

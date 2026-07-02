@@ -118,7 +118,8 @@ func updatePresentationHandler(store Store) http.HandlerFunc {
 		}
 
 		var body struct {
-			Title string `json:"title"`
+			Title      string   `json:"title"`
+			SlideOrder []string `json:"slide_order,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidJSON, cfg.ErrMsgInvalidJSON)
@@ -130,9 +131,22 @@ func updatePresentationHandler(store Store) http.HandlerFunc {
 			return
 		}
 
-		if err := store.UpdateTitle(r.Context(), id, body.Title); err != nil {
+		if body.SlideOrder != nil {
+			for _, sid := range body.SlideOrder {
+				if !validate.IsValidUUIDv7(sid) {
+					response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
+					return
+				}
+			}
+		}
+
+		if err := store.Update(r.Context(), id, body.Title, body.SlideOrder); err != nil {
 			if errors.Is(err, ErrNotFound) {
 				response.WriteError(w, http.StatusNotFound, cfg.ErrNotFound, cfg.ErrMsgNotFound)
+				return
+			}
+			if errors.Is(err, ErrInvalidSlideOrder) {
+				response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidSlideOrder)
 				return
 			}
 			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgUpdatePresentation)
