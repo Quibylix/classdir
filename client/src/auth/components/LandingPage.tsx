@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { Box, Button, Center, Loader, Paper, PasswordInput, Stack, Title } from '@mantine/core'
 import { PresentationIcon } from '@phosphor-icons/react/dist/csr/Presentation'
 import { useAuth } from '../hooks/useAuth'
@@ -13,7 +14,8 @@ export function LandingPage() {
 
   useEffect(() => { checkAuth() }, [])
 
-  async function handleLogin() {
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
     if (!password) return
     setLoggingIn(true)
     setError('')
@@ -38,7 +40,7 @@ export function LandingPage() {
           <Stack align="center" gap="md">
             <PresentationIcon size="48" />
             <Title>ClassDir</Title>
-            <Button component="a" href={CLIENT_CONFIGURE} size="lg">
+            <Button component={Link} to={CLIENT_CONFIGURE} size="lg">
               Go to Dashboard
             </Button>
             <Button variant="subtle" onClick={logout}>
@@ -54,27 +56,28 @@ export function LandingPage() {
     <Box h="100vh" bg="gray.0">
       <Center h="100vh">
         <Paper shadow="md" p="xl" radius="md" maw={400} w="100%">
-          <Stack align="center" gap="md">
-            <PresentationIcon size="48" />
-            <Title>ClassDir</Title>
-            <PasswordInput
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.currentTarget.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              error={error}
-              autoFocus
-              w="100%"
-            />
-            <Button
-              onClick={handleLogin}
-              loading={loggingIn}
-              disabled={!password}
-              fullWidth
-            >
-              Login
-            </Button>
-          </Stack>
+          <form onSubmit={handleLogin}>
+            <Stack align="center" gap="md">
+              <PresentationIcon size="48" />
+              <Title>ClassDir</Title>
+              <PasswordInput
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.currentTarget.value)}
+                error={error}
+                autoFocus
+                w="100%"
+              />
+              <Button
+                type="submit"
+                loading={loggingIn}
+                disabled={!password}
+                fullWidth
+              >
+                Login
+              </Button>
+            </Stack>
+          </form>
         </Paper>
       </Center>
     </Box>
