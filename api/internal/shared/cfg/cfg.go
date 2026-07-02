@@ -34,6 +34,12 @@ const (
 	ErrMsgNotFound          = "presentation not found"
 	ErrMsgDuplicateID       = "a presentation with this id already exists"
 	ErrMsgListPresentation  = "failed to list presentations"
+	ErrMsgCreateSlide      = "failed to create slide"
+	ErrMsgGetSlide         = "failed to retrieve slide"
+	ErrMsgUpdateSlide      = "failed to update slide"
+	ErrMsgDeleteSlide      = "failed to delete slide"
+	ErrMsgMissingContent   = "content is required"
+	ErrMsgInvalidSlideOrder = "invalid slide_order: one or more ids do not belong to this presentation"
 )
 
 const (
