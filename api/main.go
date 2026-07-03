@@ -30,7 +30,7 @@ func main() {
 	presentation.RegisterRoutes(api, store)
 
 	h := hub.NewHub(store)
-	mux.Handle("GET /ws/v1", auth.AuthMiddleware(hub.WSHandler(h)))
+	mux.Handle("GET /ws/v1", auth.AuthMiddleware(hub.WSHandler(h, hub.DefaultAcceptor{})))
 
 	mux.Handle("/api/v1/", auth.AuthMiddleware(api))
 

@@ -2,13 +2,11 @@ package hub
 
 import (
 	"net/http"
-
-	"github.com/coder/websocket"
 )
 
-func WSHandler(hub *Hub) http.HandlerFunc {
+func WSHandler(hub *Hub, acceptor wsAcceptor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := websocket.Accept(w, r, nil)
+		conn, err := acceptor.Accept(w, r, nil)
 		if err != nil {
 			return
 		}
