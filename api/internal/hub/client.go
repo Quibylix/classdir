@@ -123,7 +123,9 @@ func (c *Client) handleInit(paramsJSON json.RawMessage) {
 
 	room := c.hub.GetOrCreateRoom(params.PresentationID)
 	room.slides = pres.Slides
-	room.currentIndex = 0
+	if room.currentIndex >= len(room.slides) {
+		room.currentIndex = 0
+	}
 
 	c.room = room
 	room.controller = c
@@ -132,7 +134,7 @@ func (c *Client) handleInit(paramsJSON json.RawMessage) {
 	data, _ := json.Marshal(presentationStatus{
 		PresentationID: params.PresentationID,
 		Slides:         pres.Slides,
-		CurrentIndex:   0,
+		CurrentIndex:   room.currentIndex,
 	})
 	c.writeData(data)
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,9 +16,10 @@ import (
 )
 
 type mockConn struct {
-	readCh  chan []byte
-	writeCh chan []byte
-	doneCh  chan struct{}
+	readCh    chan []byte
+	writeCh   chan []byte
+	doneCh    chan struct{}
+	closeOnce sync.Once
 }
 
 func newMockConn() *mockConn {
@@ -33,7 +35,7 @@ func (m *mockConn) Read(ctx context.Context) (websocket.MessageType, []byte, err
 	case msg := <-m.readCh:
 		return websocket.MessageText, msg, nil
 	case <-m.doneCh:
-		return 0, nil, ctx.Err()
+		return 0, nil, context.Canceled
 	case <-ctx.Done():
 		return 0, nil, ctx.Err()
 	}
@@ -44,14 +46,16 @@ func (m *mockConn) Write(ctx context.Context, typ websocket.MessageType, p []byt
 	case m.writeCh <- p:
 		return nil
 	case <-m.doneCh:
-		return ctx.Err()
+		return context.Canceled
 	case <-ctx.Done():
 		return ctx.Err()
 	}
 }
 
 func (m *mockConn) Close(code websocket.StatusCode, reason string) error {
-	close(m.doneCh)
+	m.closeOnce.Do(func() {
+		close(m.doneCh)
+	})
 	return nil
 }
 
@@ -446,5 +450,47 @@ func TestClient_HandleInit_DuplicateInit(t *testing.T) {
 	}
 	if evI.Data.CurrentSlide != 1 {
 		t.Fatalf("expected current_slide 1, got %d", evI.Data.CurrentSlide)
+	}
+}
+
+func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
+	hub := newTestHub()
+
+	controller := newMockConn()
+	viewer := newMockConn()
+	startClient(hub, controller)
+	startClient(hub, viewer)
+
+	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+	recvData(t, controller)
+
+	sendCommand(t, viewer, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	recvData(t, viewer)
+
+	sendCommand(t, controller, CmdNextSlide, "")
+	recvEvent(t, controller, EventSlideChanged)
+	recvEvent(t, viewer, EventSlideChanged)
+
+	controller.Close(websocket.StatusNormalClosure, "test disconnect")
+
+	reconnector := newMockConn()
+	startClient(hub, reconnector)
+	sendCommand(t, reconnector, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+
+	data := recvData(t, reconnector)
+	var s struct {
+		CurrentIndex int `json:"current_index"`
+	}
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatalf("failed to unmarshal init data: %v", err)
+	}
+	if s.CurrentIndex != 1 {
+		t.Fatalf("expected current_index 1 (preserved), got %d", s.CurrentIndex)
+	}
+
+	sendCommand(t, reconnector, CmdNextSlide, "")
+	ev := recvEvent(t, reconnector, EventSlideChanged)
+	if ev.Data.CurrentSlide != 2 {
+		t.Fatalf("expected current_slide 2, got %d", ev.Data.CurrentSlide)
 	}
 }
