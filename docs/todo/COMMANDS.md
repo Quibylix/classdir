@@ -17,43 +17,38 @@ Unless otherwise specified, all commands are sent as JSON objects through a WebS
 
 ## Initialization Commands
 
-- [ ] **init_presentation**: Initializes a new presentation session.
+- [x] **init_presentation**: Initializes a new presentation session.
   - Parameters:
     - `presentation_id`: A unique identifier for the presentation room.
-  - Response: `{ "data": { "presentation_id": <presentation_id>, "slides": [<slide_object>] } }`
-  - Broadcast: `{ "event": "presentation_initialized", "data": { "presentation_id": <presentation_id>, "slides": [<slide_object>] } }`
+  - Response: `{ "data": { "presentation_id": <presentation_id>, "current_index": 0, "slides": [<slide_object>] } }`
+  - Broadcast: `{ "event": "presentation_initialized", "data": { "presentation_id": <presentation_id>, "current_index": 0, "slides": [<slide_object>] } }`
     - Slide Object Structure:
       ```json
       [
           {
-              "id": "<uuid>",
-              "slide_number": 1,
-              "content": "<section><h1>Introduction</h1><p>Welcome to class! Today we will learn...</p></section>",
-              "metadata": { "title": "Introduction", "author": "Teacher Name" }
+              "id": "string",
+              "content": "string"
           }
       ]
       ```
 
-- [ ] **join_room**: Subscribes to a presentation room to receive broadcast events.
+- [x] **join_room**: Subscribes to a presentation room to receive broadcast events.
   - Parameters:
     - `presentation_id`: The unique identifier of the presentation room to join.
-  - Response: `{ "data": { "presentation_id": <presentation_id>, "slides": [<slide_object>] } }`
+  - Response: `{ "data": { "presentation_id": <presentation_id>, "current_index": <slide_number>, "slides": [<slide_object>] } }`
   - Broadcast: None (the server starts forwarding existing broadcasts to this connection).
 
 ## Slide Control Commands
 
-- [ ] **next_slide**: Advances to the next slide in the presentation.
+- [x] **next_slide**: Advances to the next slide in the presentation.
   - Parameters: None
-  - Response: `{ "data": { "current_slide": <slide_number> } }`
   - Broadcast: `{ "event": "slide_changed", "data": { "current_slide": <slide_number> } }`
-- [ ] **prev_slide**: Returns to the previous slide in the presentation.
+- [x] **prev_slide**: Returns to the previous slide in the presentation.
   - Parameters: None
-  - Response: `{ "data": { "current_slide": <slide_number> } }`
   - Broadcast: `{ "event": "slide_changed", "data": { "current_slide": <slide_number> } }`
-- [ ] **go_to_slide**: Jumps to a specific slide in the presentation.
+- [x] **go_to_slide**: Jumps to a specific slide in the presentation.
   - Parameters:
     - `slide_number`: The number of the slide to jump to.
-  - Response: `{ "data": { "current_slide": <slide_number> } }`
   - Broadcast: `{ "event": "slide_changed", "data": { "current_slide": <slide_number> } }`
 - [ ] **hide_slide**: Hides the current slide from the presentation view.
   - Parameters: None

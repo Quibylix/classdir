@@ -17,14 +17,7 @@ Requests to the API require authentication via a JWT token. The token must be se
       "password": "string" // The secret password from the .env file.
   }
   ```
-  - Response: Sets an httpOnly, secure, and sameSite cookie with the JWT token.
-  ```json
-  {
-      "data": {
-          "message": "Authenticated successfully"
-      }
-  }
-  ```
+  - Response: 204 No Content. Sets an httpOnly, secure, and sameSite cookie with the JWT token.
 
 - [x] `POST /api/v1/auth/logout`: Logs out by clearing the authentication cookie.
   - Response: Clears the JWT cookie.
@@ -59,15 +52,11 @@ Requests to the API require authentication via a JWT token. The token must be se
       "data": {
           "id": "string",
           "title": "string",
+          "slide_order": ["string"],
           "slides": [
               {
                   "id": "string",
-                  "slide_number": number,
-                  "content": "string",
-                  "metadata": {
-                      "title": "string",
-                      "author": "string"
-                  }
+                  "content": "string"
               }
           ]
       }
@@ -87,17 +76,13 @@ Requests to the API require authentication via a JWT token. The token must be se
       "data": {
           "id": "string",
           "title": "string",
-            "slides": [
-                {
-                    "id": "string",
-                    "slide_number": number,
-                    "content": "string",
-                    "metadata": {
-                        "title": "string",
-                        "author": "string"
-                    }
-                }
-            ]
+          "slide_order": ["string"],
+          "slides": [
+              {
+                  "id": "string",
+                  "content": "string"
+              }
+          ]
       }
   }
   ```
@@ -107,16 +92,12 @@ Requests to the API require authentication via a JWT token. The token must be se
 
 ### Slide Management
 
-- [ ] `POST /api/v1/presentation/:presentationId/slides`: Adds a new slide to the specified presentation.
+- [x] `POST /api/v1/presentation/:presentationId/slides`: Adds a new slide to the specified presentation.
   - Request Body:
   ```json
   {
       "id": "string", // The unique identifier for the slide. UUIDv7 format is required.
       "content": "string" // The content of the slide, which must be a sanitized and valid Reveal.js code.
-      "metadata": {
-          "title": "string", // The title of the slide.
-          "author": "string" // The author of the slide.
-      }
   }
   ```
   - Response: Returns the new slide object.
@@ -124,33 +105,23 @@ Requests to the API require authentication via a JWT token. The token must be se
   {
       "data": {
           "id": "string",
-          "slide_number": number,
-          "content": "string",
-          "metadata": {
-              "title": "string",
-              "author": "string"
-          }
+          "content": "string"
       }
   }
   ```
 
-- [ ] `GET /api/v1/presentation/:presentationId/slides/:slideId`: Retrieves the details of a specific slide in the specified presentation.
+- [x] `GET /api/v1/presentation/:presentationId/slides/:slideId`: Retrieves the details of a specific slide in the specified presentation.
   - Response: Returns the slide object.
   ```json
   {
       "data": {
           "id": "string",
-          "slide_number": number,
-          "content": "string",
-          "metadata": {
-              "title": "string",
-              "author": "string"
-          }
+          "content": "string"
       }
   }
   ```
 
-- [ ] `PUT /api/v1/presentation/:presentationId/slides/:slideId`: Updates the content of a specific slide in the specified presentation.
+- [x] `PUT /api/v1/presentation/:presentationId/slides/:slideId`: Updates the content of a specific slide in the specified presentation.
   - Request Body:
   ```json
   {
@@ -162,17 +133,12 @@ Requests to the API require authentication via a JWT token. The token must be se
   {
       "data": {
           "id": "string",
-          "slide_number": number,
-          "content": "string",
-          "metadata": {
-              "title": "string",
-              "author": "string"
-          }
+          "content": "string"
       }
   }
   ```
 
-- [ ] `DELETE /api/v1/presentation/:presentationId/slides/:slideId`: Deletes a specific slide from the specified presentation.
+- [x] `DELETE /api/v1/presentation/:presentationId/slides/:slideId`: Deletes a specific slide from the specified presentation.
   - Response: Returns an http status code indicating success or failure.
 
 ### Student Management

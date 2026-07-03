@@ -49,7 +49,6 @@ API -- Processes requests --> Database[(Database)]
     "error": {
         "code": "string",
         "message": "string",
-        "details": {} // An optional object containing additional details about the error, which can be any valid JSON structure.
     }
 }
 ```
