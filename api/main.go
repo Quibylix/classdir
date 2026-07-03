@@ -7,6 +7,7 @@ import (
 
 	"classdir/api/internal/auth"
 	"classdir/api/internal/db"
+	"classdir/api/internal/hub"
 	"classdir/api/internal/presentation"
 	"classdir/api/internal/shared/cfg"
 )
@@ -23,8 +24,13 @@ func main() {
 
 	auth.RegisterRoutes(mux)
 
+	store := presentation.NewStore(pool)
+
 	api := http.NewServeMux()
-	presentation.RegisterRoutes(api, presentation.NewStore(pool))
+	presentation.RegisterRoutes(api, store)
+
+	h := hub.NewHub(store)
+	mux.Handle("GET /ws/v1", auth.AuthMiddleware(hub.WSHandler(h)))
 
 	mux.Handle("/api/v1/", auth.AuthMiddleware(api))
 
