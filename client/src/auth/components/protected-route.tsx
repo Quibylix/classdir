@@ -1,6 +1,6 @@
 import { Center, Loader } from '@mantine/core'
 import { useNavigate } from 'react-router'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/use-auth'
 import { useEffect } from 'react';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Box, Button, Card, Center, Group, Loader, Modal, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core'
-import { usePresentationList } from '../hooks/usePresentationList'
-import { useAuth } from '../../auth/hooks/useAuth'
-import { DeleteModal } from './DeleteModal'
-import styles from './PresentationListPage.module.css'
+import { usePresentationList } from '../hooks/use-presentation-list'
+import { useAuth } from '../../auth/hooks/use-auth'
+import { DeleteModal } from './delete-modal'
+import styles from './presentation-list-page.module.css'
 
 export function PresentationListPage() {
   const { presentations, isLoading, isCreating, isDeleting, error, refresh, create, remove } = usePresentationList()

@@ -4,10 +4,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router'
 import { AuthProvider } from './auth/auth-context'
-import { ProtectedRoute } from './auth/components/ProtectedRoute'
-import { LandingPage } from './auth/components/LandingPage'
-import { PresentationListPage } from './presentation/components/PresentationListPage'
-import { PresentationDetailPage } from './presentation/components/PresentationDetailPage'
+import { ProtectedRoute } from './auth/components/protected-route'
+import { LandingPage } from './auth/components/landing-page'
+import { PresentationListPage } from './presentation/components/presentation-list-page'
+import { PresentationDetailPage } from './presentation/components/presentation-detail-page'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

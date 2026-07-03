@@ -5,11 +5,11 @@ import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft'
 import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight'
 import { PlusIcon } from '@phosphor-icons/react/dist/csr/Plus'
 import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
-import { usePresentation } from '../hooks/usePresentation'
-import { useSlides } from '../hooks/useSlides'
+import { usePresentation } from '../hooks/use-presentation'
+import { useSlides } from '../hooks/use-slides'
 import { deletePresentation } from '../api'
-import { DeleteModal } from './DeleteModal'
-import { SlideEditor } from './SlideEditor'
+import { DeleteModal } from './delete-modal'
+import { SlideEditor } from './slide-editor'
 
 export function PresentationDetailPage() {
   const { id } = useParams<{ id: string }>()

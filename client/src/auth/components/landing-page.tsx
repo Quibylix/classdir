@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Box, Button, Center, Paper, PasswordInput, Stack, Title } from '@mantine/core'
 import { PresentationIcon } from '@phosphor-icons/react/dist/csr/Presentation'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/use-auth'
 import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { ERR_AUTH_INVALID_PASSWORD, ERR_AUTH_CONNECTION } from '../../shared/cfg/messages'
 
