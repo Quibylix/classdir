@@ -18,8 +18,14 @@ type wsAcceptor interface {
 	Accept(w http.ResponseWriter, r *http.Request, opts *websocket.AcceptOptions) (wsConn, error)
 }
 
-type DefaultAcceptor struct{}
+type DefaultAcceptor struct {
+	OriginPatterns []string
+}
 
-func (DefaultAcceptor) Accept(w http.ResponseWriter, r *http.Request, opts *websocket.AcceptOptions) (wsConn, error) {
+func (a DefaultAcceptor) Accept(w http.ResponseWriter, r *http.Request, opts *websocket.AcceptOptions) (wsConn, error) {
+	if opts == nil {
+		opts = &websocket.AcceptOptions{}
+	}
+	opts.OriginPatterns = a.OriginPatterns
 	return websocket.Accept(w, r, opts)
 }

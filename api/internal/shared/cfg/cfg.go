@@ -7,6 +7,7 @@ const (
 	EnvAdminPass   = "ADMIN_PASSWORD"
 	EnvJWTSecret   = "JWT_SECRET"
 	EnvDatabaseURL = "DATABASE_URL"
+	EnvWSOrigin    = "WS_ORIGIN"
 )
 
 const (

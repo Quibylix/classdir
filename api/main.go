@@ -30,7 +30,13 @@ func main() {
 	presentation.RegisterRoutes(api, store)
 
 	h := hub.NewHub(store)
-	mux.Handle("GET /ws/v1", auth.AuthMiddleware(hub.WSHandler(h, hub.DefaultAcceptor{})))
+
+	originPattern := os.Getenv(cfg.EnvWSOrigin)
+	var originPatterns []string
+	if originPattern != "" {
+		originPatterns = []string{originPattern}
+	}
+	mux.Handle("GET /ws/v1", auth.AuthMiddleware(hub.WSHandler(h, hub.DefaultAcceptor{OriginPatterns: originPatterns})))
 
 	mux.Handle("/api/v1/", auth.AuthMiddleware(api))
 

@@ -11,6 +11,7 @@ services:
       DATABASE_URL: postgres://classdir:${DB_PASSWORD}@database:5432/classdir?sslmode=disable
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      WS_ORIGIN: ${WS_ORIGIN}
     ports:
       - "8080:8080"
 
