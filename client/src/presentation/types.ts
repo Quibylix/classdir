@@ -19,3 +19,22 @@ export const PresentationPreviewSchema = z.object({
   title: z.string(),
 })
 export type PresentationPreview = z.infer<typeof PresentationPreviewSchema>
+
+export const WSOutputMessageSchema = z.object({
+  event: z.literal('slide_changed'),
+  data: z.object({
+    current_slide: z.number(),
+  }),
+}).or(z.object({
+  data: z.object({
+    slides: z.array(SlideSchema),
+    current_index: z.number(),
+  })
+})).or(z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string()
+  }),
+}))
+
+export type WSOutputMessage = z.infer<typeof WSOutputMessageSchema>
