@@ -7,8 +7,9 @@ import (
 )
 
 type roomCommand struct {
-	msg    []byte
-	sender *Client
+	handler CommandHandler
+	params  json.RawMessage
+	sender  *Client
 }
 
 type Room struct {
@@ -51,62 +52,34 @@ func (r *Room) Run() {
 				}
 			}
 		case cmd := <-r.commands:
-			r.handleCommand(cmd)
+			if cmd.sender == r.controller {
+				cmd.handler.Handle(CommandContext{Client: cmd.sender, Room: r, Hub: r.hub}, cmd.params)
+			}
 		}
 	}
 }
 
-func (r *Room) handleCommand(cmd roomCommand) {
-	if cmd.sender != r.controller {
-		return
-	}
-
-	var parsed Command
-	if err := json.Unmarshal(cmd.msg, &parsed); err != nil {
-		return
-	}
-
-	switch parsed.Command {
-	case CmdNextSlide:
-		if r.currentIndex < len(r.slides)-1 {
-			r.currentIndex++
-		}
-	case CmdPrevSlide:
-		if r.currentIndex > 0 {
-			r.currentIndex--
-		}
-	case CmdGoToSlide:
-		var params SlideParams
-		if err := json.Unmarshal(parsed.Parameters, &params); err != nil {
-			return
-		}
-		if params.SlideNumber < 0 || params.SlideNumber >= len(r.slides) {
-			return
-		}
-		r.currentIndex = params.SlideNumber
-	default:
-		return
-	}
-
-	type SlideChangedEventData struct {
+func (r *Room) broadcastSlideChanged() {
+	type data struct {
 		CurrentSlide int `json:"current_slide"`
 	}
-
-	type SlideChangedEvent struct {
-		Event string                `json:"event"`
-		Data  SlideChangedEventData `json:"data"`
+	type event struct {
+		Event string `json:"event"`
+		Data  data   `json:"data"`
 	}
 
-	event, _ := json.Marshal(SlideChangedEvent{
+	e, err := json.Marshal(event{
 		Event: EventSlideChanged,
-		Data: SlideChangedEventData{
-			CurrentSlide: r.currentIndex,
-		},
+		Data:  data{CurrentSlide: r.currentIndex},
 	})
+
+	if err != nil {
+		return
+	}
 
 	for client := range r.clients {
 		select {
-		case client.send <- event:
+		case client.send <- e:
 		default:
 		}
 	}
