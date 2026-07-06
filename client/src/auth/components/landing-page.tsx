@@ -5,6 +5,7 @@ import { PresentationIcon } from '@phosphor-icons/react/dist/csr/Presentation'
 import { useAuth } from '../hooks/use-auth'
 import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { ERR_AUTH_INVALID_PASSWORD, ERR_AUTH_CONNECTION } from '../../shared/cfg/messages'
+import { LOGIN_RESULT } from '../types'
 
 export function LandingPage() {
   const { isAuthenticated, isLoading, login } = useAuth()
@@ -25,8 +26,8 @@ export function LandingPage() {
     setLoggingIn(true)
     setError('')
     const result = await login(password)
-    if (result === 'invalid') setError(ERR_AUTH_INVALID_PASSWORD)
-    else if (result === 'error') setError(ERR_AUTH_CONNECTION)
+    if (result === LOGIN_RESULT.Invalid) setError(ERR_AUTH_INVALID_PASSWORD)
+    else if (result === LOGIN_RESULT.Error) setError(ERR_AUTH_CONNECTION)
     setLoggingIn(false)
   }
 

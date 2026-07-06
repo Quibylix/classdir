@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createSlide, updateSlide, deleteSlide } from '../api'
 import { uuidv7 } from '../../shared/util/uuid'
+import { DEFAULT_SLIDE_CONTENT } from '../cfg'
 import type { Slide } from '../types'
 import type { FetchError } from '../../shared/api/fetch'
 
@@ -26,7 +27,7 @@ export function useSlides(presId: string, initialSlides?: Slide[]) {
     setIsAdding(true)
     setError(null)
     const id = uuidv7()
-    createSlide(presId, id, '<h1>New Slide</h1>').match(
+    createSlide(presId, id, DEFAULT_SLIDE_CONTENT).match(
       (slide) => {
         setSlides(prev => [...prev, slide])
         setCurrentIndex(slides.length)

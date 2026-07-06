@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type z from 'zod'
-
-export type WSStatus = 'connecting' | 'connected' | 'disconnected'
+import { WS_STATUS } from '../types'
+import { WS_RECONNECT_TIMEOUT_MS } from '../cfg/ws'
+import type { WSStatus } from '../types'
 
 type UseWebSocketOptions<T> = {
   url: string
@@ -10,7 +11,7 @@ type UseWebSocketOptions<T> = {
 }
 
 export function useSafeWebSocket<T>({ url, onMessage, schema }: UseWebSocketOptions<T>) {
-  const [status, setStatus] = useState<WSStatus>('disconnected')
+  const [status, setStatus] = useState<WSStatus>(WS_STATUS.Disconnected)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const onMessageRef = useRef(onMessage)
@@ -19,14 +20,14 @@ export function useSafeWebSocket<T>({ url, onMessage, schema }: UseWebSocketOpti
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-    setStatus('connecting')
+    setStatus(WS_STATUS.Connecting)
     const ws = new WebSocket(url)
     wsRef.current = ws
 
-    ws.onopen = () => setStatus('connected')
+    ws.onopen = () => setStatus(WS_STATUS.Connected)
     ws.onclose = () => {
-      setStatus('disconnected')
-      reconnectTimerRef.current = setTimeout(connect, 3000)
+      setStatus(WS_STATUS.Disconnected)
+      reconnectTimerRef.current = setTimeout(connect, WS_RECONNECT_TIMEOUT_MS)
     }
     ws.onmessage = (e) => {
       try {

@@ -4,6 +4,7 @@ import { Box, Button, Card, Center, Group, Loader, Modal, SimpleGrid, Stack, Tex
 import { usePresentationList } from '../hooks/use-presentation-list'
 import { useAuth } from '../../auth/hooks/use-auth'
 import { DeleteModal } from './delete-modal'
+import { clientConfigure, clientPresent, clientControl } from '../../shared/cfg/routes'
 import styles from './presentation-list-page.module.css'
 
 export function PresentationListPage() {
@@ -71,10 +72,10 @@ export function PresentationListPage() {
               radius="md"
             >
               <Stack gap="xs">
-                <Text className={styles.titleLink} component={Link} to={`/configure/${p.id}`} fw={500}>{p.title}</Text>
+                <Text className={styles.titleLink} component={Link} to={clientConfigure(p.id)} fw={500}>{p.title}</Text>
                 <Group gap="xs">
-                  <Button component={Link} to={`/present/${p.id}`} size="xs" variant="light">Present</Button>
-                  <Button component={Link} to={`/control/${p.id}`} size="xs" variant="light">Control</Button>
+                  <Button component={Link} to={clientPresent(p.id)} size="xs" variant="light">Present</Button>
+                  <Button component={Link} to={clientControl(p.id)} size="xs" variant="light">Control</Button>
                   <Button
                     variant="subtle"
                     color="red"

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ERR_CODE_UNKNOWN } from '../cfg/http'
 
 const ApiErrorSchema = z.object({
   error: z.object({
@@ -24,5 +25,5 @@ export async function toApiError(res: Response): Promise<ApiError> {
   if (parsed.success) {
     return { ...parsed.data.error, status: res.status }
   }
-  return { code: 'UNKNOWN', message: res.statusText, status: res.status }
+  return { code: ERR_CODE_UNKNOWN, message: res.statusText, status: res.status }
 }

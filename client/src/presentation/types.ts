@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { WS_EVENT_SLIDE_CHANGED } from './cfg'
 
 export const SlideSchema = z.object({
   id: z.string(),
@@ -21,7 +22,7 @@ export const PresentationPreviewSchema = z.object({
 export type PresentationPreview = z.infer<typeof PresentationPreviewSchema>
 
 export const WSOutputMessageSchema = z.object({
-  event: z.literal('slide_changed'),
+  event: z.literal(WS_EVENT_SLIDE_CHANGED),
   data: z.object({
     current_slide: z.number(),
   }),

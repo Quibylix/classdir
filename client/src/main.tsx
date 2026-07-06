@@ -10,6 +10,7 @@ import { PresentationListPage } from './presentation/components/presentation-lis
 import { PresentationDetailPage } from './presentation/components/presentation-detail-page'
 import { PresentView } from './presentation/components/present-view'
 import { ControlView } from './presentation/components/control-view'
+import { ROOT, CLIENT_CONFIGURE, clientConfigure, clientPresent, clientControl } from './shared/cfg/routes'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,11 +18,11 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <MantineProvider>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/configure" element={<ProtectedRoute><PresentationListPage /></ProtectedRoute>} />
-            <Route path="/configure/:id" element={<ProtectedRoute><PresentationDetailPage /></ProtectedRoute>} />
-            <Route path="/present/:id" element={<ProtectedRoute><PresentView /></ProtectedRoute>} />
-            <Route path="/control/:id" element={<ProtectedRoute><ControlView /></ProtectedRoute>} />
+            <Route path={ROOT} element={<LandingPage />} />
+            <Route path={CLIENT_CONFIGURE} element={<ProtectedRoute><PresentationListPage /></ProtectedRoute>} />
+            <Route path={clientConfigure(':id')} element={<ProtectedRoute><PresentationDetailPage /></ProtectedRoute>} />
+            <Route path={clientPresent(':id')} element={<ProtectedRoute><PresentView /></ProtectedRoute>} />
+            <Route path={clientControl(':id')} element={<ProtectedRoute><ControlView /></ProtectedRoute>} />
           </Routes>
         </MantineProvider>
       </BrowserRouter>

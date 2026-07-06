@@ -10,6 +10,7 @@ import { useSlides } from '../hooks/use-slides'
 import { deletePresentation } from '../api'
 import { DeleteModal } from './delete-modal'
 import { SlideEditor } from './slide-editor'
+import { CLIENT_CONFIGURE, clientPresent, clientControl } from '../../shared/cfg/routes'
 
 export function PresentationDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -41,7 +42,7 @@ export function PresentationDetailPage() {
       <Center h="100vh">
         <Stack align="center">
           <Text c="red">{error.message}</Text>
-          <Button component={Link} to="/configure">Back to Presentations</Button>
+          <Button component={Link} to={CLIENT_CONFIGURE}>Back to Presentations</Button>
         </Stack>
       </Center>
     )
@@ -52,7 +53,7 @@ export function PresentationDetailPage() {
       <Center h="100vh">
         <Stack align="center">
           <Text>Presentation not found</Text>
-          <Button component={Link} to="/configure">Back to Presentations</Button>
+          <Button component={Link} to={CLIENT_CONFIGURE}>Back to Presentations</Button>
         </Stack>
       </Center>
     )
@@ -85,11 +86,11 @@ export function PresentationDetailPage() {
     <Stack h="100vh" p="md" gap="sm">
       <Group justify="space-between">
         <Group>
-          <Button component={Link} to="/configure" variant="subtle">
+          <Button component={Link} to={CLIENT_CONFIGURE} variant="subtle">
             &larr; Back
           </Button>
-          <Button component={Link} to={`/present/${id}`} variant="light" size="sm">Present</Button>
-          <Button component={Link} to={`/control/${id}`} variant="light" size="sm">Control</Button>
+          <Button component={Link} to={clientPresent(id!)} variant="light" size="sm">Present</Button>
+          <Button component={Link} to={clientControl(id!)} variant="light" size="sm">Control</Button>
         </Group>
         <Group>
           <Button color="red" onClick={() => setDeleteModalOpen(true)}>Delete Presentation</Button>

@@ -1,8 +1,9 @@
 import { createContext, useEffect, useState } from 'react'
 import { api } from '../shared/api/client'
 import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from '../shared/cfg/routes'
-
-export type LoginResult = 'ok' | 'invalid' | 'error'
+import { HTTP_METHOD_POST } from '../shared/cfg/http'
+import { LOGIN_RESULT } from './types'
+import type { LoginResult } from './types'
 
 export type AuthState = {
   isAuthenticated: boolean
@@ -35,21 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(password: string): Promise<LoginResult> {
     try {
       const res = await api(AUTH_LOGIN, {
-        method: 'POST',
+        method: HTTP_METHOD_POST,
         body: JSON.stringify({ password }),
       })
       if (res.ok) {
         setIsAuthenticated(true)
-        return 'ok'
+        return LOGIN_RESULT.Ok
       }
-      return 'invalid'
+      return LOGIN_RESULT.Invalid
     } catch {
-      return 'error'
+      return LOGIN_RESULT.Error
     }
   }
 
   async function logout(): Promise<void> {
-    await api(AUTH_LOGOUT, { method: 'POST' })
+    await api(AUTH_LOGOUT, { method: HTTP_METHOD_POST })
     setIsAuthenticated(false)
   }
 

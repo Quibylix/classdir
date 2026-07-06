@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import type { EditorView } from 'codemirror'
 import { Box, Button, Group, Paper, Stack } from '@mantine/core'
+import { CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
 import type { Slide } from '../types'
 
 type SlideEditorProps = {
@@ -15,8 +16,8 @@ function buildPreviewHtml(allSlides: Slide[], targetIndex: number): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/theme/black.css">
+  <link rel="stylesheet" href="${CDN_REVEAL_CSS}">
+  <link rel="stylesheet" href="${CDN_REVEAL_THEME_CSS}">
 </head>
 <body>
   <div class="reveal" id="reveal" style="opacity: 0;">
@@ -24,7 +25,7 @@ function buildPreviewHtml(allSlides: Slide[], targetIndex: number): string {
 ${slidesHtml}
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.js"></script>
+  <script src="${CDN_REVEAL_JS}"></script>
   <script>
     Reveal.initialize({transition: 'none', progress: false}).then(() => {
       Reveal.slide(${targetIndex});

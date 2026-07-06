@@ -9,6 +9,8 @@ import { useSafeWebSocket } from '../../shared/hooks/use-websocket'
 import { WSOutputMessageSchema, type Slide } from '../types'
 import { usePresentation } from '../hooks/use-presentation'
 import { WS_V1, CLIENT_CONFIGURE } from '../../shared/cfg/routes'
+import { WS_STATUS } from '../../shared/types'
+import { POST_MSG_TYPE, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
 
 function buildPresentHtml(slides: Slide[], initialSlide: number): string {
   const slidesHtml = slides.map(s => `<section>${s.content}</section>`).join('\n')
@@ -16,8 +18,8 @@ function buildPresentHtml(slides: Slide[], initialSlide: number): string {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/theme/black.css">
+  <link rel="stylesheet" href="${CDN_REVEAL_CSS}">
+  <link rel="stylesheet" href="${CDN_REVEAL_THEME_CSS}">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -27,13 +29,13 @@ function buildPresentHtml(slides: Slide[], initialSlide: number): string {
   <div class="reveal" id="reveal">
     <div class="slides">${slidesHtml}</div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.js"></script>
+  <script src="${CDN_REVEAL_JS}"></script>
   <script>
     Reveal.initialize({ transition: 'slide', progress: false, controls: false }).then(function() {
       Reveal.slide(${initialSlide});
     });
     window.addEventListener('message', function(e) {
-      if (e.data.type === 'navigate') Reveal.slide(e.data.index);
+      if (e.data.type === '${POST_MSG_TYPE.Navigate}') Reveal.slide(e.data.index);
     });
   </script>
 </body>
@@ -66,7 +68,7 @@ export function ControlView() {
 
       if ('event' in msg) {
         setCurrentSlide(msg.data.current_slide)
-        iframeRef.current?.contentWindow?.postMessage({ type: 'navigate', index: msg.data.current_slide }, window.location.origin)
+        iframeRef.current?.contentWindow?.postMessage({ type: POST_MSG_TYPE.Navigate, index: msg.data.current_slide }, window.location.origin)
         return
       }
 
@@ -79,11 +81,11 @@ export function ControlView() {
   })
 
   useEffect(() => {
-    if (status === 'connected' && id && !joinedRef.current) {
+    if (status === WS_STATUS.Connected && id && !joinedRef.current) {
       send({ command: 'init_presentation', parameters: { presentation_id: id } })
       joinedRef.current = true
     }
-    if (status === 'disconnected') {
+    if (status === WS_STATUS.Disconnected) {
       joinedRef.current = false
     }
   }, [status, id, send])
