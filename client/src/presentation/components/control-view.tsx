@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router'
 import {
-  Box, Button, Center, Group, Loader, Stack, Text, TextInput, Title,
+  Box, Button, Center, Group, Loader, NumberInput, Stack, Text, Title,
 } from '@mantine/core'
 import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft'
 import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight'
@@ -169,16 +169,19 @@ export function ControlView() {
         </Button>
       </Group>
 
-      <Group justify="center">
-        <TextInput
-          placeholder={`Go to slide (1-${slideCount})`}
-          value={goToValue}
-          onChange={(e) => setGoToValue(e.currentTarget.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleGoTo() }}
-          miw={160}
-        />
-        <Button onClick={handleGoTo} disabled={!goToValue}>Go</Button>
-      </Group>
+      <form onSubmit={(e) => { e.preventDefault(); handleGoTo() }}>
+        <Group justify="center">
+          <NumberInput
+            placeholder={`Go to slide (1-${slideCount})`}
+            value={goToValue}
+            min={1}
+            max={slideCount}
+            onChange={(value) => setGoToValue(value.toString())}
+            miw={160}
+          />
+          <Button type="submit" disabled={!goToValue}>Go</Button>
+        </Group>
+      </form>
     </Box>
   )
 }
