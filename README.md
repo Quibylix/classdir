@@ -1,14 +1,28 @@
-ClassDir is a web application designed to help educators manage their classes more dynamically.
+ClassDir is a web application designed to help educators manage their classes more dynamically. Teachers can control presentations from any device, annotate content in real-time, and engage students through interactive participation techniques.
 
-## Motivation
+## Quick Start
 
-I wanted a way to boost student participation while maintaining full mobility in the classroom. ClassDir was created to free teachers from being stuck behind a desk, allowing them to move around, interact with students, and monitor their work while seamlessly controlling presentations.
+1. **Prerequisites**: [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+2. **Clone** the repository
+3. **Create environment file**:
+   ```sh
+   cp .env.example .env
+   ```
+4. **Fill in the required variables** in `.env`:
 
-Using a tablet with a stylus, educators can annotate content in real-time without losing face-to-face connection with the room. Additionally, inspired by Doug Lemov’s book **Teach Like a Champion**—specifically the **Cold Call** technique—ClassDir includes tools to randomize student participation, keeping everyone engaged, alert, and accountable.
+   | Variable | Description |
+   |---|---|
+   | `DB_PASSWORD` | PostgreSQL database password |
+   | `ADMIN_PASSWORD` | Password used to log into the app |
+   | `JWT_SECRET` | Secret key for signing authentication tokens |
+   | `WS_ORIGIN` | Allowed WebSocket origin (e.g. `http://localhost:3000` or `*`) |
 
-## Features
+5. **Start the app**:
+   ```sh
+   docker compose up
+   ```
+6. Open **http://localhost:3000** and log in with the password set in `ADMIN_PASSWORD`
 
-- **Remote Presentation Control**: Control slides and content directly from any tablet or mobile device.
-- **Real-Time Annotation**: Draw, highlight, and write over slides using a stylus or touch input.
-- **Interactive Spin Wheel**: Randomly select students to answer questions, ensuring universal engagement and excitement.
-- **Targeted Selection**: A clever variation of the spin wheel that allows the teacher to choose a specific student while maintaining the element of surprise for the rest of the class.
+### Architecture
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for system design and domain rules.
