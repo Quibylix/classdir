@@ -59,7 +59,7 @@ export function PresentView() {
 
       if ('event' in msg) {
         setCurrentSlide(msg.data.current_slide)
-        iframeRef.current?.contentWindow?.postMessage({ type: 'navigate', index: msg.data.current_slide }, '*')
+        iframeRef.current?.contentWindow?.postMessage({ type: 'navigate', index: msg.data.current_slide }, window.location.origin)
         return;
       }
 
