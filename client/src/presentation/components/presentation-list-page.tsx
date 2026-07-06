@@ -70,17 +70,22 @@ export function PresentationListPage() {
               padding="lg"
               radius="md"
             >
-              <Group gap={0}>
-                <Text className={styles.titleLink} component={Link} to={`/configure/${p.id}`} flex="1" fw={500}>{p.title}</Text>
-                <Button
-                  variant="subtle"
-                  color="red"
-                  size="xs"
-                  onClick={(e) => { e.stopPropagation(); setDeletingId(p.id) }}
-                >
-                  Delete
-                </Button>
-              </Group>
+              <Stack gap="xs">
+                <Text className={styles.titleLink} component={Link} to={`/configure/${p.id}`} fw={500}>{p.title}</Text>
+                <Group gap="xs">
+                  <Button component={Link} to={`/present/${p.id}`} size="xs" variant="light">Present</Button>
+                  <Button component={Link} to={`/control/${p.id}`} size="xs" variant="light">Control</Button>
+                  <Button
+                    variant="subtle"
+                    color="red"
+                    size="xs"
+                    ml="auto"
+                    onClick={(e) => { e.stopPropagation(); setDeletingId(p.id) }}
+                  >
+                    Delete
+                  </Button>
+                </Group>
+              </Stack>
             </Card>
           ))}
         </SimpleGrid>

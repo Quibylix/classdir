@@ -88,6 +88,8 @@ export function PresentationDetailPage() {
           <Button component={Link} to="/configure" variant="subtle">
             &larr; Back
           </Button>
+          <Button component={Link} to={`/present/${id}`} variant="light" size="sm">Present</Button>
+          <Button component={Link} to={`/control/${id}`} variant="light" size="sm">Control</Button>
         </Group>
         <Group>
           <Button color="red" onClick={() => setDeleteModalOpen(true)}>Delete Presentation</Button>

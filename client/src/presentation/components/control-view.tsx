@@ -1,0 +1,184 @@
+import { useEffect, useRef, useState } from 'react'
+import { useParams, Link } from 'react-router'
+import {
+  Box, Button, Center, Group, Loader, Stack, Text, TextInput, Title,
+} from '@mantine/core'
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft'
+import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight'
+import { useSafeWebSocket } from '../../shared/hooks/use-websocket'
+import { WSOutputMessageSchema, type Slide } from '../types'
+import { usePresentation } from '../hooks/use-presentation'
+import { WS_V1, CLIENT_CONFIGURE } from '../../shared/cfg/routes'
+
+function buildPresentHtml(slides: Slide[], initialSlide: number): string {
+  const slidesHtml = slides.map(s => `<section>${s.content}</section>`).join('\n')
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/theme/black.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div class="reveal" id="reveal">
+    <div class="slides">${slidesHtml}</div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@6/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({ transition: 'slide', progress: false, controls: false }).then(function() {
+      Reveal.slide(${initialSlide});
+    });
+    window.addEventListener('message', function(e) {
+      if (e.data.type === 'navigate') Reveal.slide(e.data.index);
+    });
+  </script>
+</body>
+</html>`
+}
+
+export function ControlView() {
+  const { id } = useParams<{ id: string }>()
+  const { presentation, isLoading: presLoading } = usePresentation(id ?? '')
+  const [cachedHtml, setCachedHtml] = useState<string>()
+  const [slideCount, setSlideCount] = useState<number>(0)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [goToValue, setGoToValue] = useState('')
+  const joinedRef = useRef(false)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${WS_V1}`
+
+  const { status, send } = useSafeWebSocket({
+    url: wsUrl,
+    schema: WSOutputMessageSchema,
+    onMessage(msg) {
+      if ('error' in msg) {
+        setFetchError(msg.error.message)
+        setLoading(false)
+        return
+      }
+
+      if ('event' in msg) {
+        setCurrentSlide(msg.data.current_slide)
+        iframeRef.current?.contentWindow?.postMessage({ type: 'navigate', index: msg.data.current_slide }, '*')
+        return
+      }
+
+      setSlideCount(msg.data.slides.length)
+      setCurrentSlide(msg.data.current_index)
+      setCachedHtml(buildPresentHtml(msg.data.slides, msg.data.current_index))
+      setLoading(false)
+      return;
+    },
+  })
+
+  useEffect(() => {
+    if (status === 'connected' && id && !joinedRef.current) {
+      send({ command: 'init_presentation', parameters: { presentation_id: id } })
+      joinedRef.current = true
+    }
+    if (status === 'disconnected') {
+      joinedRef.current = false
+    }
+  }, [status, id, send])
+
+  function handlePrev() {
+    send({ command: 'prev_slide', parameters: {} })
+  }
+
+  function handleNext() {
+    send({ command: 'next_slide', parameters: {} })
+  }
+
+  function handleGoTo() {
+    const num = parseInt(goToValue, 10)
+    if (isNaN(num) || num < 1 || num > slideCount) return
+    send({ command: 'go_to_slide', parameters: { slide_number: num - 1 } })
+    setGoToValue('')
+  }
+
+  if (presLoading || loading) {
+    return <Center h="100vh"><Loader /></Center>
+  }
+
+  if (fetchError) {
+    return (
+      <Center h="100vh">
+        <Stack align="center">
+          <Text c="red">{fetchError}</Text>
+          <Button component={Link} to={CLIENT_CONFIGURE}>Back</Button>
+        </Stack>
+      </Center>
+    )
+  }
+
+  if (slideCount === 0) {
+    return (
+      <Center h="100vh">
+        <Stack align="center">
+          <Text c="dimmed">No slides in this presentation</Text>
+          <Button component={Link} to={CLIENT_CONFIGURE}>Back</Button>
+        </Stack>
+      </Center>
+    )
+  }
+
+  return (
+    <Box p="md" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Group mb="md">
+        <Button component={Link} to={CLIENT_CONFIGURE} variant="subtle">
+          &larr; Back
+        </Button>
+        <Title order={3}>{presentation?.title ?? 'Control'}</Title>
+      </Group>
+
+      <iframe
+        ref={iframeRef}
+        srcDoc={cachedHtml}
+        title="Presentation"
+        style={{ width: '100%', height: 0, border: 'none', display: 'block', flex: 1 }}
+      />
+
+      <Group justify="center" mb="md">
+        <Button
+          size="xl"
+          variant="default"
+          onClick={handlePrev}
+          disabled={currentSlide <= 0}
+          px="lg"
+        >
+          <CaretLeftIcon size={24} />
+        </Button>
+        <Text size="xl" style={{ minWidth: 100, textAlign: 'center' }}>
+          {currentSlide + 1} / {slideCount}
+        </Text>
+        <Button
+          size="xl"
+          variant="default"
+          onClick={handleNext}
+          disabled={currentSlide >= slideCount - 1}
+          px="lg"
+        >
+          <CaretRightIcon size={24} />
+        </Button>
+      </Group>
+
+      <Group justify="center">
+        <TextInput
+          placeholder={`Go to slide (1-${slideCount})`}
+          value={goToValue}
+          onChange={(e) => setGoToValue(e.currentTarget.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleGoTo() }}
+          miw={160}
+        />
+        <Button onClick={handleGoTo} disabled={!goToValue}>Go</Button>
+      </Group>
+    </Box>
+  )
+}
