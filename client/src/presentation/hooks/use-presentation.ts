@@ -12,10 +12,13 @@ export function usePresentation(id: string) {
   useEffect(() => {
     setIsLoading(true)
     setError(null)
-    getPresentation(id).match(
-      (data) => { setPresentation(data); setIsLoading(false) },
-      (e) => { setError(e); setIsLoading(false) },
-    )
+
+    getPresentation(id)
+      .match(
+        (data) => setPresentation(data),
+        (e) => setError(e),
+      )
+      .finally(() => setIsLoading(false))
   }, [id])
 
   function updateTitle(title: string) {
@@ -23,10 +26,13 @@ export function usePresentation(id: string) {
 
     setIsSaving(true)
     setError(null)
-    return updatePresentationTitle(id, title).match(
-      (data) => { setPresentation(data); setIsSaving(false) },
-      (e) => { setError(e); setIsSaving(false) },
-    )
+
+    return updatePresentationTitle(id, title)
+      .match(
+        (data) => setPresentation(data),
+        (e) => setError(e),
+      )
+      .finally(() => setIsSaving(false))
   }
 
   return { presentation, isLoading, isSaving, error, updateTitle }

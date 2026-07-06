@@ -26,52 +26,48 @@ export function useSlides(presId: string, initialSlides?: Slide[]) {
   const addSlide = useCallback(() => {
     setIsAdding(true)
     setError(null)
+
     const id = uuidv7()
-    createSlide(presId, id, DEFAULT_SLIDE_CONTENT).match(
-      (slide) => {
-        setSlides(prev => [...prev, slide])
-        setCurrentIndex(slides.length)
-        setIsAdding(false)
-      },
-      (e) => {
-        setError(e)
-        setIsAdding(false)
-      },
-    )
+
+    createSlide(presId, id, DEFAULT_SLIDE_CONTENT)
+      .match(
+        (slide) => {
+          setSlides(prev => [...prev, slide])
+          setCurrentIndex(slides.length)
+        },
+        (e) => setError(e),
+      )
+      .finally(() => setIsAdding(false))
   }, [presId, slides.length])
 
   const saveSlide = useCallback((index: number, content: string) => {
     const slide = slides[index]
     if (!slide) return
+
     setIsSaving(true)
     setError(null)
-    updateSlide(presId, slide.id, content).match(
-      (updated) => {
-        setSlides(prev => prev.map((s, i) => i === index ? updated : s))
-        setIsSaving(false)
-      },
-      (e) => {
-        setError(e)
-        setIsSaving(false)
-      },
-    )
+
+    updateSlide(presId, slide.id, content)
+      .match(
+        (updated) => setSlides(prev => prev.map((s, i) => i === index ? updated : s)),
+        (e) => setError(e),
+      )
+      .finally(() => setIsSaving(false))
   }, [presId, slides])
 
   const removeSlide = useCallback((index: number) => {
     const slide = slides[index]
     if (!slide) return
+
     setIsDeleting(true)
     setError(null)
-    deleteSlide(presId, slide.id).match(
-      () => {
-        setSlides(prev => prev.filter((_, i) => i !== index))
-        setIsDeleting(false)
-      },
-      (e) => {
-        setError(e)
-        setIsDeleting(false)
-      },
-    )
+
+    deleteSlide(presId, slide.id)
+      .match(
+        () => setSlides(prev => prev.filter((_, i) => i !== index)),
+        (e) => setError(e),
+      )
+      .finally(() => setIsDeleting(false))
   }, [presId, slides])
 
   const goToSlide = useCallback((index: number) => {
@@ -82,7 +78,6 @@ export function useSlides(presId: string, initialSlides?: Slide[]) {
 
   return {
     slides,
-    currentSlide: slides[currentIndex] ?? null,
     currentIndex,
     isAdding,
     isSaving,

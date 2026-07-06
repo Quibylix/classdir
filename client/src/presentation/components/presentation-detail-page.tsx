@@ -18,11 +18,13 @@ export function PresentationDetailPage() {
 
   const { presentation, isLoading, isSaving, error, updateTitle } = usePresentation(id ?? "")
   const {
-    slides, currentSlide, currentIndex,
+    slides, currentIndex,
     isAdding, isSaving: isSlideSaving, isDeleting: isSlideDeleting,
     error: slidesError,
     addSlide, saveSlide, removeSlide, goToSlide,
   } = useSlides(id ?? "", presentation?.slides)
+
+  const currentSlide = slides[currentIndex];
 
   const [editTitle, setEditTitle] = useState('')
   const [editing, setEditing] = useState(false)
@@ -67,8 +69,7 @@ export function PresentationDetailPage() {
 
   function handleSaveTitle() {
     if (!editTitle.trim()) return
-    updateTitle(editTitle.trim())
-    setEditing(false)
+    updateTitle(editTitle.trim())?.finally(() => setEditing(false))
   }
 
   function handleDeleteConfirm() {
