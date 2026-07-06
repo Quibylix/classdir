@@ -17,7 +17,6 @@ type Room struct {
 	controller   *Client
 	register     chan *Client
 	unregister   chan *Client
-	broadcast    chan []byte
 	commands     chan roomCommand
 	currentIndex int
 	slides       []presentation.Slide
@@ -30,7 +29,6 @@ func NewRoom(id string) *Room {
 		clients:    make(map[*Client]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
-		broadcast:  make(chan []byte),
 		commands:   make(chan roomCommand, channelBuffer),
 	}
 }
@@ -50,13 +48,6 @@ func (r *Room) Run() {
 				if len(r.clients) == 0 && r.hub != nil {
 					r.hub.RemoveRoom(r.ID)
 					return
-				}
-			}
-		case msg := <-r.broadcast:
-			for client := range r.clients {
-				select {
-				case client.send <- msg:
-				default:
 				}
 			}
 		case cmd := <-r.commands:
