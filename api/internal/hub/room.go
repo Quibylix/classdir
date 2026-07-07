@@ -20,6 +20,7 @@ type Room struct {
 	controller   *Client
 	register     chan *Client
 	unregister   chan *Client
+	done         chan struct{}
 	commands     chan roomCommand
 	currentIndex int
 	slides       []presentation.Slide
@@ -35,6 +36,7 @@ func NewRoom(id string) *Room {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		commands:   make(chan roomCommand, channelBuffer),
+		done:       make(chan struct{}),
 	}
 }
 
@@ -68,12 +70,8 @@ func (r *Room) Run() {
 			}
 
 		case <-deleteCh:
-			select {
-			case client := <-r.register:
-				r.clients[client] = true
-			default:
-			}
 			if len(r.clients) == 0 && r.hub != nil {
+				close(r.done)
 				r.hub.RemoveRoom(r)
 				return
 			}

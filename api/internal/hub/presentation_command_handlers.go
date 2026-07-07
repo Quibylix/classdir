@@ -63,7 +63,13 @@ func (h InitHandler) Handle(ctx CommandContext, params json.RawMessage) {
 
 	ctx.Client.room = room
 	room.controller = ctx.Client
-	room.register <- ctx.Client
+
+	select {
+	case room.register <- ctx.Client:
+	case <-room.done:
+		ctx.Client.writeError(cfg.ErrInternalError, cfg.ErrMsgRoomClosed)
+		return
+	}
 
 	data, _ := json.Marshal(presentationStatus{
 		PresentationID: p.PresentationID,
@@ -92,7 +98,12 @@ func (h JoinHandler) Handle(ctx CommandContext, params json.RawMessage) {
 	}
 
 	ctx.Client.room = room
-	room.register <- ctx.Client
+	select {
+	case room.register <- ctx.Client:
+	case <-room.done:
+		ctx.Client.writeError(cfg.ErrInternalError, cfg.ErrMsgRoomClosed)
+		return
+	}
 
 	data, _ := json.Marshal(presentationStatus{
 		PresentationID: room.ID,
