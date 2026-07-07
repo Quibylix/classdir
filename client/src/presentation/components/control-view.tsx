@@ -10,7 +10,7 @@ import { WSOutputMessageSchema, type Slide } from '../types'
 import { usePresentation } from '../hooks/use-presentation'
 import { WS_V1, CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { WS_STATUS } from '../../shared/types'
-import { POST_MSG_TYPE, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
+import { POST_MSG_TYPE, WS_CMD_INIT_PRESENTATION, WS_CMD_NEXT_SLIDE, WS_CMD_PREV_SLIDE, WS_CMD_GO_TO_SLIDE, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
 
 function buildPresentHtml(slides: Slide[], initialSlide: number): string {
   const slidesHtml = slides.map(s => `<section>${s.content}</section>`).join('\n')
@@ -86,7 +86,7 @@ export function ControlView() {
 
   useEffect(() => {
     if (status === WS_STATUS.Connected && id && !joinedRef.current) {
-      send({ command: 'init_presentation', parameters: { presentation_id: id } })
+      send({ command: WS_CMD_INIT_PRESENTATION, parameters: { presentation_id: id } })
       joinedRef.current = true
     }
     if (status === WS_STATUS.Disconnected) {
@@ -95,17 +95,17 @@ export function ControlView() {
   }, [status, id, send])
 
   function handlePrev() {
-    send({ command: 'prev_slide', parameters: {} })
+    send({ command: WS_CMD_PREV_SLIDE, parameters: {} })
   }
 
   function handleNext() {
-    send({ command: 'next_slide', parameters: {} })
+    send({ command: WS_CMD_NEXT_SLIDE, parameters: {} })
   }
 
   function handleGoTo() {
     const num = parseInt(goToValue, 10)
     if (isNaN(num) || num < 1 || num > slideCount) return
-    send({ command: 'go_to_slide', parameters: { slide_number: num - 1 } })
+    send({ command: WS_CMD_GO_TO_SLIDE, parameters: { slide_number: num - 1 } })
     setGoToValue('')
   }
 

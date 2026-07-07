@@ -5,7 +5,7 @@ import { useSafeWebSocket } from '../../shared/hooks/use-websocket'
 import { WSOutputMessageSchema, type Slide } from '../types'
 import { WS_V1 } from '../../shared/cfg/routes'
 import { WS_STATUS } from '../../shared/types'
-import { POST_MSG_TYPE, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
+import { POST_MSG_TYPE, WS_CMD_JOIN_ROOM, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
 
 function buildPresentHtml(slides: Slide[], initialSlide: number): string {
   const slidesHtml = slides.map(s => `<section>${s.content}</section>`).join('\n')
@@ -74,7 +74,7 @@ export function PresentView() {
 
   useEffect(() => {
     if (status === WS_STATUS.Connected && code && !joinedRef.current) {
-      send({ command: 'join_room', parameters: { room_code: code } })
+      send({ command: WS_CMD_JOIN_ROOM, parameters: { room_code: code } })
       joinedRef.current = true
     }
     if (status === WS_STATUS.Disconnected) {
