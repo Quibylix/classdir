@@ -10,7 +10,7 @@ import { useSlides } from '../hooks/use-slides'
 import { deletePresentation } from '../api'
 import { DeleteModal } from './delete-modal'
 import { SlideEditor } from './slide-editor'
-import { CLIENT_CONFIGURE, clientPresent, clientControl } from '../../shared/cfg/routes'
+import { CLIENT_CONFIGURE, clientControl } from '../../shared/cfg/routes'
 
 export function PresentationDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -97,7 +97,6 @@ export function PresentationDetailPage() {
           >
             &larr; Back
           </Button>
-          <Button component={Link} to={clientPresent(id!)} variant="light" size="sm">Present</Button>
           <Button component={Link} to={clientControl(id!)} variant="light" size="sm">Control</Button>
         </Group>
         <Group>

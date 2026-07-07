@@ -8,7 +8,7 @@ import { WifiHighIcon } from '@phosphor-icons/react/dist/csr/WifiHigh'
 import { LockKeyIcon } from '@phosphor-icons/react/dist/csr/LockKey'
 import { useAuth } from '../hooks/use-auth'
 import classes from './landing-page.module.css'
-import { CLIENT_LOGIN, CLIENT_CONFIGURE } from '../../shared/cfg/routes'
+import { CLIENT_LOGIN, CLIENT_CONFIGURE, CLIENT_PRESENT } from '../../shared/cfg/routes'
 
 const FEATURES = [
   {
@@ -172,7 +172,7 @@ export function LandingPage() {
               Create beautiful lesson slides and guide your students through them in real time — from any device, no accounts needed.
             </Text>
 
-            <Group mt="md" gap="md">
+            <Group mt="md" gap="md" justify="center">
               <Button
                 component={Link}
                 to={isAuthenticated ? CLIENT_CONFIGURE : CLIENT_LOGIN}
@@ -184,10 +184,20 @@ export function LandingPage() {
                 Get Started
               </Button>
               <Button
-                component="a"
-                href="#features"
+                component={Link}
+                to={CLIENT_PRESENT}
+                size="lg"
                 variant="outline"
                 color="gray"
+                c="gray.5"
+                style={{ borderColor: 'var(--mantine-color-dark-6)' }}
+              >
+                Join a Presentation
+              </Button>
+              <Button
+                component="a"
+                href="#features"
+                variant="subtle"
                 size="lg"
                 c="gray.5"
                 style={{ borderColor: 'var(--mantine-color-dark-6)' }}

@@ -5,7 +5,7 @@ import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
 import { usePresentationList } from '../hooks/use-presentation-list'
 import { useAuth } from '../../auth/hooks/use-auth'
 import { DeleteModal } from './delete-modal'
-import { clientConfigure, clientPresent, clientControl, CLIENT_LOGIN } from '../../shared/cfg/routes'
+import { clientConfigure, clientControl, CLIENT_LOGIN } from '../../shared/cfg/routes'
 import styles from './presentation-list-page.module.css'
 
 export function PresentationListPage() {
@@ -112,7 +112,6 @@ export function PresentationListPage() {
                 <Stack gap="xs">
                   <Text className={styles.titleLink} component={Link} to={clientConfigure(p.id)} fw={500}>{p.title}</Text>
                   <Group gap="xs">
-                    <Button component={Link} to={clientPresent(p.id)} size="xs" variant="light">Present</Button>
                     <Button component={Link} to={clientControl(p.id)} size="xs" variant="light">Control</Button>
                     <Button
                       variant="light"

@@ -10,8 +10,9 @@ import { LoginPage } from './auth/components/login-page'
 import { PresentationListPage } from './presentation/components/presentation-list-page'
 import { PresentationDetailPage } from './presentation/components/presentation-detail-page'
 import { PresentView } from './presentation/components/present-view'
+import { PresentCodeEntry } from './presentation/components/present-code-entry'
 import { ControlView } from './presentation/components/control-view'
-import { ROOT, CLIENT_LOGIN, CLIENT_CONFIGURE, clientConfigure, clientPresent, clientControl } from './shared/cfg/routes'
+import { ROOT, CLIENT_LOGIN, CLIENT_CONFIGURE, CLIENT_PRESENT, clientConfigure, clientPresent, clientControl } from './shared/cfg/routes'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path={CLIENT_CONFIGURE} element={<ProtectedRoute><PresentationListPage /></ProtectedRoute>} />
             <Route path={clientConfigure(':id')} element={<ProtectedRoute><PresentationDetailPage /></ProtectedRoute>} />
             <Route path={clientPresent(':code')} element={<PresentView />} />
+            <Route path={CLIENT_PRESENT} element={<PresentCodeEntry />} />
             <Route path={clientControl(':id')} element={<ProtectedRoute><ControlView /></ProtectedRoute>} />
           </Routes>
         </MantineProvider>
