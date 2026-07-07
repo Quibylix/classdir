@@ -2,6 +2,7 @@ package hub
 
 import (
 	"encoding/json"
+	"time"
 
 	"classdir/api/internal/presentation"
 )
@@ -25,6 +26,8 @@ type Room struct {
 	hub          *Hub
 }
 
+const roomDeleteTimeout = 1 * time.Minute
+
 func NewRoom(id string) *Room {
 	return &Room{
 		ID:         id,
@@ -36,10 +39,21 @@ func NewRoom(id string) *Room {
 }
 
 func (r *Room) Run() {
+	var (
+		deleteTimer *time.Timer
+		deleteCh    <-chan time.Time
+	)
+
 	for {
 		select {
 		case client := <-r.register:
+			if deleteTimer != nil {
+				deleteTimer.Stop()
+				deleteTimer = nil
+				deleteCh = nil
+			}
 			r.clients[client] = true
+
 		case client := <-r.unregister:
 			if _, ok := r.clients[client]; ok {
 				delete(r.clients, client)
@@ -47,11 +61,25 @@ func (r *Room) Run() {
 				if client == r.controller {
 					r.controller = nil
 				}
-				if len(r.clients) == 0 && r.hub != nil {
-					r.hub.RemoveRoom(r)
-					return
+				if len(r.clients) == 0 && r.hub != nil && deleteTimer == nil {
+					deleteTimer = time.NewTimer(roomDeleteTimeout)
+					deleteCh = deleteTimer.C
 				}
 			}
+
+		case <-deleteCh:
+			select {
+			case client := <-r.register:
+				r.clients[client] = true
+			default:
+			}
+			if len(r.clients) == 0 && r.hub != nil {
+				r.hub.RemoveRoom(r)
+				return
+			}
+			deleteTimer = nil
+			deleteCh = nil
+
 		case cmd := <-r.commands:
 			if cmd.sender == r.controller {
 				cmd.handler.Handle(CommandContext{Client: cmd.sender, Room: r, Hub: r.hub}, cmd.params)
