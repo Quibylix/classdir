@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/coder/websocket"
+	"golang.org/x/time/rate"
 )
 
 type wsConn interface {
@@ -28,4 +29,17 @@ func (a DefaultAcceptor) Accept(w http.ResponseWriter, r *http.Request, opts *we
 	}
 	opts.OriginPatterns = a.OriginPatterns
 	return websocket.Accept(w, r, opts)
+}
+
+type rateLimitProvider interface {
+	Limits(authenticated bool) (rate.Limit, int)
+}
+
+type DefaultRateLimitProvider struct{}
+
+func (DefaultRateLimitProvider) Limits(authenticated bool) (rate.Limit, int) {
+	if authenticated {
+		return 20, 50
+	}
+	return 2, 5
 }

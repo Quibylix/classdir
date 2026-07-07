@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 
 	"github.com/coder/websocket"
+	"golang.org/x/time/rate"
 
+	"classdir/api/internal/shared/cfg"
 	"classdir/api/internal/shared/response"
 )
 
@@ -23,6 +25,7 @@ type Client struct {
 	room *Room
 
 	Authenticated bool
+	limiter       *rate.Limiter
 }
 
 func NewClient(hub *Hub, conn wsConn) *Client {
@@ -46,6 +49,11 @@ func (c *Client) ReadPump() {
 		_, msg, err := c.conn.Read(context.Background())
 		if err != nil {
 			break
+		}
+
+		if !c.limiter.Allow() {
+			c.writeError(cfg.ErrRateLimit, cfg.ErrMsgRateLimit)
+			continue
 		}
 
 		var cmd Command

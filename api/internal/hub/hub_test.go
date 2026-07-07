@@ -13,6 +13,8 @@ import (
 	"github.com/coder/websocket"
 	"github.com/golang-jwt/jwt/v5"
 
+	"golang.org/x/time/rate"
+
 	"classdir/api/internal/presentation"
 	"classdir/api/internal/shared/cfg"
 )
@@ -83,12 +85,12 @@ func (m *mockStore) GetByID(ctx context.Context, id string) (*presentation.Prese
 	return nil, nil
 }
 
-func startClient(hub *Hub, conn *mockConn, cookies ...*http.Cookie) {
+func startClient(hub *Hub, conn *mockConn, rlp rateLimitProvider, cookies ...*http.Cookie) {
 	req := httptest.NewRequest("GET", "/ws/v1", nil)
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
-	WSHandler(hub, &mockAcceptor{conn: conn})(httptest.NewRecorder(), req)
+	WSHandler(hub, &mockAcceptor{conn: conn}, rlp)(httptest.NewRecorder(), req)
 }
 
 func setJWTSecret() {
@@ -248,9 +250,9 @@ func TestRoom_BroadcastsNextSlideToAllClients(t *testing.T) {
 	viewerA := newMockConn()
 	viewerB := newMockConn()
 
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, viewerA)
-	startClient(hub, viewerB)
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewerA, DefaultRateLimitProvider{})
+	startClient(hub, viewerB, DefaultRateLimitProvider{})
 
 	code := initAndGetCode(t, controller)
 
@@ -283,8 +285,8 @@ func TestRoom_BroadcastsPrevSlideToAllClients(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, viewer)
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
 
 	code := initAndGetCode(t, controller)
 
@@ -318,8 +320,8 @@ func TestRoom_BroadcastsGoToSlideToAllClients(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, viewer)
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
 
 	code := initAndGetCode(t, controller)
 
@@ -345,8 +347,8 @@ func TestRoom_ViewerCommandDoesNotBroadcast(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, viewer)
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
 
 	code := initAndGetCode(t, controller)
 
@@ -373,7 +375,7 @@ func TestClient_HandleInit_Valid(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()
 
-	startClient(hub, conn, authCookie(t))
+	startClient(hub, conn, DefaultRateLimitProvider{}, authCookie(t))
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
@@ -403,7 +405,7 @@ func TestClient_HandleInit_InvalidUUID(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()
 
-	startClient(hub, conn, authCookie(t))
+	startClient(hub, conn, DefaultRateLimitProvider{}, authCookie(t))
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"not-a-uuid"`)
 	recvError(t, conn, cfg.ErrInvalidUUID)
@@ -417,7 +419,7 @@ func TestClient_HandleInit_NilPresentation(t *testing.T) {
 	})
 	conn := newMockConn()
 
-	startClient(hub, conn, authCookie(t))
+	startClient(hub, conn, DefaultRateLimitProvider{}, authCookie(t))
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 	recvError(t, conn, cfg.ErrNotFound)
@@ -429,8 +431,8 @@ func TestClient_HandleJoin_Valid(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, viewer)
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
 
 	code := initAndGetCode(t, controller)
 
@@ -461,7 +463,7 @@ func TestClient_HandleJoin_MissingRoom(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()
 
-	startClient(hub, conn)
+	startClient(hub, conn, DefaultRateLimitProvider{})
 
 	sendCommand(t, conn, CmdJoinRoom, `"room_code":"00000000"`)
 	recvError(t, conn, cfg.ErrNotFound)
@@ -471,7 +473,7 @@ func TestClient_HandleInit_Unauthenticated(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()
 
-	startClient(hub, conn)
+	startClient(hub, conn, DefaultRateLimitProvider{})
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 	recvError(t, conn, cfg.ErrUnauthorized)
@@ -483,8 +485,8 @@ func TestClient_HandleInit_DuplicateInit(t *testing.T) {
 	controller := newMockConn()
 	newController := newMockConn()
 
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, newController, authCookie(t))
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, newController, DefaultRateLimitProvider{}, authCookie(t))
 
 	initAndGetCode(t, controller)
 	initAndGetCode(t, newController)
@@ -503,13 +505,43 @@ func TestClient_HandleInit_DuplicateInit(t *testing.T) {
 	}
 }
 
+type mockRateLimitProvider struct{}
+
+func (mockRateLimitProvider) Limits(authenticated bool) (rate.Limit, int) {
+	return 0.001, 1
+}
+
+func TestReadPump_RateLimit_NonAuthenticated(t *testing.T) {
+	hub := newTestHub()
+	conn := newMockConn()
+	startClient(hub, conn, mockRateLimitProvider{})
+
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+	recvError(t, conn, cfg.ErrUnauthorized)
+
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+	recvError(t, conn, cfg.ErrRateLimit)
+}
+
+func TestReadPump_RateLimit_Authenticated(t *testing.T) {
+	hub := newTestHub()
+	conn := newMockConn()
+	startClient(hub, conn, mockRateLimitProvider{}, authCookie(t))
+
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"not-a-uuid"`)
+	recvError(t, conn, cfg.ErrInvalidUUID)
+
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"not-a-uuid"`)
+	recvError(t, conn, cfg.ErrRateLimit)
+}
+
 func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 	hub := newTestHub()
 
 	controller := newMockConn()
 	viewer := newMockConn()
-	startClient(hub, controller, authCookie(t))
-	startClient(hub, viewer)
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
 
 	code := initAndGetCode(t, controller)
 
@@ -523,7 +555,7 @@ func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 	controller.Close(websocket.StatusNormalClosure, "test disconnect")
 
 	reconnector := newMockConn()
-	startClient(hub, reconnector, authCookie(t))
+	startClient(hub, reconnector, DefaultRateLimitProvider{}, authCookie(t))
 	sendCommand(t, reconnector, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
 	data := recvData(t, reconnector)

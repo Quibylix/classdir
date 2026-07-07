@@ -18,6 +18,7 @@ const (
 	ErrMissingField  = "MISSING_FIELD"
 	ErrConflict      = "CONFLICT"
 	ErrNotFound      = "NOT_FOUND"
+	ErrRateLimit     = "RATE_LIMITED"
 )
 
 const (
@@ -42,6 +43,7 @@ const (
 	ErrMsgMissingContent     = "content is required"
 	ErrMsgInvalidSlideOrder  = "invalid slide_order: one or more ids do not belong to this presentation"
 	ErrMsgRoomClosed         = "room is closed"
+	ErrMsgRateLimit          = "too many requests"
 )
 
 const (
