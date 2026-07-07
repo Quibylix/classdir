@@ -18,9 +18,17 @@ ClassDir is a web application designed to help educators manage their classes mo
    | `WS_ORIGIN` | Allowed WebSocket origin (e.g. `http://localhost:3000` or `*`) |
 
 5. **Start the app**:
+
+   **Development** (with exposed ports):
+   ```sh
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+   ```
+
+   **Production** (no exposed ports — use your own reverse proxy or check `docker-compose.dev.yml` to learn how to expose them):
    ```sh
    docker compose up
    ```
+
 6. Open **http://localhost:3000** and log in with the password set in `ADMIN_PASSWORD`
 
 ### Architecture
