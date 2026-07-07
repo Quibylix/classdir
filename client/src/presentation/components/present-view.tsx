@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router'
-import { Box, Center, Loader, Text } from '@mantine/core'
+import { Box, Center, Loader, Paper, Text } from '@mantine/core'
 import { useSafeWebSocket } from '../../shared/hooks/use-websocket'
 import { WSOutputMessageSchema, type Slide } from '../types'
 import { WS_V1 } from '../../shared/cfg/routes'
@@ -83,12 +83,12 @@ export function PresentView() {
   }, [status, id, send])
 
   if (loading) {
-    return <Center h="100vh"><Loader /></Center>
+    return <Center h="100vh" bg="dark.9"><Loader /></Center>
   }
 
   if (fetchError) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Text c="red">{fetchError}</Text>
       </Center>
     )
@@ -96,41 +96,33 @@ export function PresentView() {
 
   if (slideCount === 0) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Text c="dimmed">No slides in this presentation</Text>
       </Center>
     )
   }
 
   return (
-    <Box
-      m={0}
-      p={0}
-      w="100dvw"
-      h="100dvh"
-      pos="relative"
-      bg="#000"
-    >
+    <Box m={0} p={0} w="100dvw" h="100dvh" pos="relative" bg="#000">
       <iframe
         ref={iframeRef}
         srcDoc={cachedHtml}
         title="Presentation"
         style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
       />
-      <Text
-        size="sm"
+      <Paper
         pos="fixed"
         bottom={16}
         right={16}
-        bg="rgba(0,0,0,0.6)"
-        c="#fff"
         p="4px 12px"
-        fz={14}
-        ff="monospace"
+        bg="dark.8"
+        bd="1px solid dark.6"
         style={{ borderRadius: 4 }}
       >
-        {currentSlide + 1} / {slideCount}
-      </Text>
+        <Text c="gray.3" fz={14} ff="monospace">
+          {currentSlide + 1} / {slideCount}
+        </Text>
+      </Paper>
     </Box>
   )
 }

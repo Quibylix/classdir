@@ -1,5 +1,11 @@
 .card {
   position: relative;
+  border: 1px solid var(--mantine-color-dark-7);
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: var(--mantine-color-dark-6);
 }
 
 .titleLink {

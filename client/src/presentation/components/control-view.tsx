@@ -106,12 +106,12 @@ export function ControlView() {
   }
 
   if (presLoading || loading) {
-    return <Center h="100vh"><Loader /></Center>
+    return <Center h="100vh" bg="dark.9"><Loader /></Center>
   }
 
   if (fetchError) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Stack align="center">
           <Text c="red">{fetchError}</Text>
           <Button component={Link} to={CLIENT_CONFIGURE}>Back</Button>
@@ -122,7 +122,7 @@ export function ControlView() {
 
   if (slideCount === 0) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Stack align="center">
           <Text c="dimmed">No slides in this presentation</Text>
           <Button component={Link} to={CLIENT_CONFIGURE}>Back</Button>
@@ -132,12 +132,19 @@ export function ControlView() {
   }
 
   return (
-    <Box p="md" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box p="md" bg="dark.9" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Group mb="md">
-        <Button component={Link} to={CLIENT_CONFIGURE} variant="subtle">
+        <Button
+          component={Link}
+          to={CLIENT_CONFIGURE}
+          variant="outline"
+          color="gray"
+          size="sm"
+          style={{ borderColor: 'var(--mantine-color-dark-6)' }}
+        >
           &larr; Back
         </Button>
-        <Title order={3}>{presentation?.title ?? 'Control'}</Title>
+        <Title order={3} c="white">{presentation?.title ?? 'Control'}</Title>
       </Group>
 
       <iframe
@@ -150,22 +157,26 @@ export function ControlView() {
       <Group justify="center" mb="md">
         <Button
           size="xl"
-          variant="default"
+          variant="outline"
+          color="gray"
           onClick={handlePrev}
           disabled={currentSlide <= 0}
           px="lg"
+          style={{ borderColor: 'var(--mantine-color-dark-6)' }}
         >
           <CaretLeftIcon size={24} />
         </Button>
-        <Text size="xl" style={{ minWidth: 100, textAlign: 'center' }}>
+        <Text size="xl" c="gray.3" style={{ minWidth: 100, textAlign: 'center' }}>
           {currentSlide + 1} / {slideCount}
         </Text>
         <Button
           size="xl"
-          variant="default"
+          variant="outline"
+          color="gray"
           onClick={handleNext}
           disabled={currentSlide >= slideCount - 1}
           px="lg"
+          style={{ borderColor: 'var(--mantine-color-dark-6)' }}
         >
           <CaretRightIcon size={24} />
         </Button>

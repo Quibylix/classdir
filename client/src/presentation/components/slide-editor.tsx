@@ -67,6 +67,7 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
         extensions: [
           basicSetup,
           html(),
+          EditorView.theme({}, { dark: true }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               setContent(update.state.doc.toString());

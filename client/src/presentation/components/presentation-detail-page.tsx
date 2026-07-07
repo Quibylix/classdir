@@ -33,7 +33,7 @@ export function PresentationDetailPage() {
 
   if (isLoading) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Loader />
       </Center>
     )
@@ -41,7 +41,7 @@ export function PresentationDetailPage() {
 
   if (error) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Stack align="center">
           <Text c="red">{error.message}</Text>
           <Button component={Link} to={CLIENT_CONFIGURE}>Back to Presentations</Button>
@@ -52,7 +52,7 @@ export function PresentationDetailPage() {
 
   if (!presentation) {
     return (
-      <Center h="100vh">
+      <Center h="100vh" bg="dark.9">
         <Stack align="center">
           <Text>Presentation not found</Text>
           <Button component={Link} to={CLIENT_CONFIGURE}>Back to Presentations</Button>
@@ -84,10 +84,17 @@ export function PresentationDetailPage() {
   if (!presentation) return null
 
   return (
-    <Stack h="100vh" p="md" gap="sm">
+    <Stack h="100vh" p="md" gap="sm" bg="dark.9">
       <Group justify="space-between">
         <Group>
-          <Button component={Link} to={CLIENT_CONFIGURE} variant="subtle">
+          <Button
+            component={Link}
+            to={CLIENT_CONFIGURE}
+            variant="outline"
+            color="gray"
+            size="sm"
+            style={{ borderColor: 'var(--mantine-color-dark-6)' }}
+          >
             &larr; Back
           </Button>
           <Button component={Link} to={clientPresent(id!)} variant="light" size="sm">Present</Button>
@@ -114,8 +121,8 @@ export function PresentationDetailPage() {
       ) : (
         <Group justify="space-between">
           <Group>
-            <Title>{presentation.title}</Title>
-            <Button variant="subtle" onClick={handleEditStart}>Edit</Button>
+            <Title c="white">{presentation.title}</Title>
+            <Button variant="outline" color="gray" size="sm" style={{ borderColor: 'var(--mantine-color-dark-6)' }} onClick={handleEditStart}>Edit</Button>
           </Group>
         </Group>
       )}
@@ -127,10 +134,13 @@ export function PresentationDetailPage() {
       <Group justify="space-between">
         <Group>
           <Button
-            variant="default"
+            variant="outline"
+            color="gray"
+            size="sm"
             onClick={() => goToSlide(currentIndex - 1)}
             disabled={currentIndex <= 0}
             px="xs"
+            style={{ borderColor: 'var(--mantine-color-dark-6)' }}
           >
             <CaretLeftIcon size={16} />
           </Button>
@@ -138,10 +148,13 @@ export function PresentationDetailPage() {
             {slides.length > 0 ? `${currentIndex + 1} / ${slides.length}` : '0 / 0'}
           </Text>
           <Button
-            variant="default"
+            variant="outline"
+            color="gray"
+            size="sm"
             onClick={() => goToSlide(currentIndex + 1)}
             disabled={currentIndex >= slides.length - 1}
             px="xs"
+            style={{ borderColor: 'var(--mantine-color-dark-6)' }}
           >
             <CaretRightIcon size={16} />
           </Button>
