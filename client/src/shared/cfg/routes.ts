@@ -5,6 +5,7 @@ export const AUTH_LOGOUT = `${API_PREFIX}/auth/logout`
 export const AUTH_CHECK = `${API_PREFIX}/auth/check`
 
 export const ROOT = '/'
+export const CLIENT_LOGIN = '/login'
 export const CLIENT_CONFIGURE = '/configure'
 export const clientConfigure = (id: string) => `${CLIENT_CONFIGURE}/${id}`
 

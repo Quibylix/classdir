@@ -1,0 +1,45 @@
+:global(html) {
+  scroll-behavior: smooth;
+}
+
+@keyframes ping {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+}
+
+.card {
+  border: 1px solid var(--mantine-color-dark-7);
+  transition: border-color 0.2s;
+  cursor: default;
+}
+
+.card:hover {
+  border-color: var(--mantine-color-dark-6);
+}
+
+.iconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--mantine-color-blue-5) 10%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.card:hover .iconBox {
+  background: var(--mantine-color-blue-6);
+  color: white;
+}
+
+.dot {
+  border-radius: 50%;
+  animation: ping 1.5s infinite;
+}

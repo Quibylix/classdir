@@ -1,7 +1,7 @@
 import { Center, Loader } from '@mantine/core'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../hooks/use-auth'
-import { ROOT } from '../../shared/cfg/routes'
+import { CLIENT_LOGIN } from '../../shared/cfg/routes'
 import { useEffect } from 'react';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -10,7 +10,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      navigate(ROOT, { replace: true });
+      navigate(CLIENT_LOGIN, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
