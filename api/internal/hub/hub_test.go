@@ -218,6 +218,27 @@ func recvError(t *testing.T, conn *mockConn, expectedCode string) {
 	}
 }
 
+type initResponse struct {
+	PresentationID string               `json:"presentation_id"`
+	Slides         []presentation.Slide `json:"slides"`
+	CurrentIndex   int                  `json:"current_index"`
+	RoomCode       string               `json:"room_code"`
+}
+
+func initAndGetCode(t *testing.T, conn *mockConn) string {
+	t.Helper()
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+	data := recvData(t, conn)
+	var ir initResponse
+	if err := json.Unmarshal(data, &ir); err != nil {
+		t.Fatalf("failed to unmarshal init data: %v", err)
+	}
+	if ir.RoomCode == "" {
+		t.Fatal("expected non-empty room_code")
+	}
+	return ir.RoomCode
+}
+
 // --- broadcast tests ---
 
 func TestRoom_BroadcastsNextSlideToAllClients(t *testing.T) {
@@ -231,13 +252,12 @@ func TestRoom_BroadcastsNextSlideToAllClients(t *testing.T) {
 	startClient(hub, viewerA)
 	startClient(hub, viewerB)
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
+	code := initAndGetCode(t, controller)
 
-	sendCommand(t, viewerA, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewerA, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewerA)
 
-	sendCommand(t, viewerB, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewerB, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewerB)
 
 	sendCommand(t, controller, CmdNextSlide, "")
@@ -266,10 +286,9 @@ func TestRoom_BroadcastsPrevSlideToAllClients(t *testing.T) {
 	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
+	code := initAndGetCode(t, controller)
 
-	sendCommand(t, viewer, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
 
 	sendCommand(t, controller, CmdNextSlide, "")
@@ -302,10 +321,9 @@ func TestRoom_BroadcastsGoToSlideToAllClients(t *testing.T) {
 	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
+	code := initAndGetCode(t, controller)
 
-	sendCommand(t, viewer, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
 
 	sendCommand(t, controller, CmdGoToSlide, `"slide_number":1`)
@@ -330,10 +348,9 @@ func TestRoom_ViewerCommandDoesNotBroadcast(t *testing.T) {
 	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
+	code := initAndGetCode(t, controller)
 
-	sendCommand(t, viewer, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
 
 	sendCommand(t, viewer, CmdGoToSlide, `"slide_number":2`)
@@ -361,22 +378,24 @@ func TestClient_HandleInit_Valid(t *testing.T) {
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
 	data := recvData(t, conn)
-	var init struct {
-		PresentationID string               `json:"presentation_id"`
-		Slides         []presentation.Slide `json:"slides"`
-		CurrentIndex   int                  `json:"current_index"`
-	}
-	if err := json.Unmarshal(data, &init); err != nil {
+	var ir initResponse
+	if err := json.Unmarshal(data, &ir); err != nil {
 		t.Fatalf("failed to unmarshal init data: %v", err)
 	}
-	if init.PresentationID != validUUID() {
-		t.Fatalf("expected presentation_id %s, got %s", validUUID(), init.PresentationID)
+	if ir.PresentationID != validUUID() {
+		t.Fatalf("expected presentation_id %s, got %s", validUUID(), ir.PresentationID)
 	}
-	if len(init.Slides) != 3 {
-		t.Fatalf("expected 3 slides, got %d", len(init.Slides))
+	if len(ir.Slides) != 3 {
+		t.Fatalf("expected 3 slides, got %d", len(ir.Slides))
 	}
-	if init.CurrentIndex != 0 {
-		t.Fatalf("expected current_index 0, got %d", init.CurrentIndex)
+	if ir.CurrentIndex != 0 {
+		t.Fatalf("expected current_index 0, got %d", ir.CurrentIndex)
+	}
+	if ir.RoomCode == "" {
+		t.Fatal("expected non-empty room_code")
+	}
+	if len(ir.RoomCode) != 8 {
+		t.Fatalf("expected room_code to be 8 digits, got %q", ir.RoomCode)
 	}
 }
 
@@ -413,16 +432,16 @@ func TestClient_HandleJoin_Valid(t *testing.T) {
 	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
+	code := initAndGetCode(t, controller)
 
-	sendCommand(t, viewer, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	data := recvData(t, viewer)
 
 	var join struct {
 		PresentationID string               `json:"presentation_id"`
 		Slides         []presentation.Slide `json:"slides"`
 		CurrentIndex   int                  `json:"current_index"`
+		RoomCode       string               `json:"room_code"`
 	}
 	if err := json.Unmarshal(data, &join); err != nil {
 		t.Fatalf("failed to unmarshal join data: %v", err)
@@ -433,6 +452,9 @@ func TestClient_HandleJoin_Valid(t *testing.T) {
 	if join.CurrentIndex != 0 {
 		t.Fatalf("expected current_index 0, got %d", join.CurrentIndex)
 	}
+	if join.RoomCode != "" {
+		t.Fatal("expected room_code to be empty in join response")
+	}
 }
 
 func TestClient_HandleJoin_MissingRoom(t *testing.T) {
@@ -441,18 +463,8 @@ func TestClient_HandleJoin_MissingRoom(t *testing.T) {
 
 	startClient(hub, conn)
 
-	sendCommand(t, conn, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, conn, CmdJoinRoom, `"room_code":"00000000"`)
 	recvError(t, conn, cfg.ErrNotFound)
-}
-
-func TestClient_HandleJoin_InvalidUUID(t *testing.T) {
-	hub := newTestHub()
-	conn := newMockConn()
-
-	startClient(hub, conn)
-
-	sendCommand(t, conn, CmdJoinRoom, `"presentation_id":"not-a-uuid"`)
-	recvError(t, conn, cfg.ErrInvalidUUID)
 }
 
 func TestClient_HandleInit_Unauthenticated(t *testing.T) {
@@ -474,11 +486,8 @@ func TestClient_HandleInit_DuplicateInit(t *testing.T) {
 	startClient(hub, controller, authCookie(t))
 	startClient(hub, newController, authCookie(t))
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
-
-	sendCommand(t, newController, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, newController)
+	initAndGetCode(t, controller)
+	initAndGetCode(t, newController)
 
 	sendCommand(t, controller, CmdGoToSlide, `"slide_number":2`)
 	sendCommand(t, newController, CmdGoToSlide, `"slide_number":1`)
@@ -502,10 +511,9 @@ func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
-	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
-	recvData(t, controller)
+	code := initAndGetCode(t, controller)
 
-	sendCommand(t, viewer, CmdJoinRoom, `"presentation_id":"`+validUUID()+`"`)
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
 
 	sendCommand(t, controller, CmdNextSlide, "")

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router'
 import {
-  Box, Button, Center, Group, Loader, NumberInput, Stack, Text, Title,
+  Box, Button, Center, Code, Group, Loader, NumberInput, Stack, Text, Title,
 } from '@mantine/core'
 import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft'
 import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight'
@@ -51,6 +51,7 @@ export function ControlView() {
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [goToValue, setGoToValue] = useState('')
+  const [roomCode, setRoomCode] = useState<string>()
   const joinedRef = useRef(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -74,6 +75,9 @@ export function ControlView() {
 
       setSlideCount(msg.data.slides.length)
       setCurrentSlide(msg.data.current_index)
+      if (msg.data.room_code) {
+        setRoomCode(msg.data.room_code)
+      }
       setCachedHtml(buildPresentHtml(msg.data.slides, msg.data.current_index))
       setLoading(false)
       return;
@@ -145,6 +149,11 @@ export function ControlView() {
           &larr; Back
         </Button>
         <Title order={3} c="white">{presentation?.title ?? 'Control'}</Title>
+        {roomCode && (
+          <Code c="gray.3" fz={18} fw={700} bg="dark.7" style={{ letterSpacing: '0.1em' }}>
+            {roomCode}
+          </Code>
+        )}
       </Group>
 
       <iframe

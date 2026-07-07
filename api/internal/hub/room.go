@@ -14,6 +14,7 @@ type roomCommand struct {
 
 type Room struct {
 	ID           string
+	Code         string
 	clients      map[*Client]bool
 	controller   *Client
 	register     chan *Client
@@ -47,7 +48,7 @@ func (r *Room) Run() {
 					r.controller = nil
 				}
 				if len(r.clients) == 0 && r.hub != nil {
-					r.hub.RemoveRoom(r.ID)
+					r.hub.RemoveRoom(r)
 					return
 				}
 			}

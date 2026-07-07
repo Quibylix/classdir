@@ -30,6 +30,7 @@ export const WSOutputMessageSchema = z.object({
   data: z.object({
     slides: z.array(SlideSchema),
     current_index: z.number(),
+    room_code: z.string().optional(),
   })
 })).or(z.object({
   error: z.object({

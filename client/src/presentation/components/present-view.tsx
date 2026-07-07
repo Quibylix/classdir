@@ -38,7 +38,7 @@ function buildPresentHtml(slides: Slide[], initialSlide: number): string {
 }
 
 export function PresentView() {
-  const { id } = useParams<{ id: string }>()
+  const { code } = useParams<{ code: string }>()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [cachedHtml, setCachedHtml] = useState<string>()
   const [slideCount, setSlideCount] = useState<number>(0)
@@ -73,14 +73,14 @@ export function PresentView() {
   })
 
   useEffect(() => {
-    if (status === WS_STATUS.Connected && id && !joinedRef.current) {
-      send({ command: 'join_room', parameters: { presentation_id: id } })
+    if (status === WS_STATUS.Connected && code && !joinedRef.current) {
+      send({ command: 'join_room', parameters: { room_code: code } })
       joinedRef.current = true
     }
     if (status === WS_STATUS.Disconnected) {
       joinedRef.current = false
     }
-  }, [status, id, send])
+  }, [status, code, send])
 
   if (loading) {
     return <Center h="100vh" bg="dark.9"><Loader /></Center>

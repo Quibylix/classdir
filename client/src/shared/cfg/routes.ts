@@ -18,5 +18,5 @@ export const WS_V1 = '/ws/v1'
 
 export const CLIENT_PRESENT = '/present'
 export const CLIENT_CONTROL = '/control'
-export const clientPresent = (id: string) => `${CLIENT_PRESENT}/${id}`
+export const clientPresent = (code: string) => `${CLIENT_PRESENT}/${code}`
 export const clientControl = (id: string) => `${CLIENT_CONTROL}/${id}`

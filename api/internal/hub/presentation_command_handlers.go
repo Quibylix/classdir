@@ -14,13 +14,14 @@ type InitParams struct {
 }
 
 type JoinParams struct {
-	PresentationID string `json:"presentation_id"`
+	RoomCode string `json:"room_code"`
 }
 
 type presentationStatus struct {
 	PresentationID string               `json:"presentation_id"`
 	Slides         []presentation.Slide `json:"slides"`
 	CurrentIndex   int                  `json:"current_index"`
+	RoomCode       string               `json:"room_code,omitempty"`
 }
 
 type InitHandler struct{}
@@ -68,6 +69,7 @@ func (h InitHandler) Handle(ctx CommandContext, params json.RawMessage) {
 		PresentationID: p.PresentationID,
 		Slides:         pres.Slides,
 		CurrentIndex:   room.currentIndex,
+		RoomCode:       room.Code,
 	})
 	ctx.Client.writeData(data)
 }
@@ -83,12 +85,7 @@ func (h JoinHandler) Handle(ctx CommandContext, params json.RawMessage) {
 		return
 	}
 
-	if !validate.IsValidUUIDv7(p.PresentationID) {
-		ctx.Client.writeError(cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
-		return
-	}
-
-	room := ctx.Hub.GetRoom(p.PresentationID)
+	room := ctx.Hub.GetRoomByCode(p.RoomCode)
 	if room == nil {
 		ctx.Client.writeError(cfg.ErrNotFound, cfg.ErrMsgNotFound)
 		return
@@ -98,7 +95,7 @@ func (h JoinHandler) Handle(ctx CommandContext, params json.RawMessage) {
 	room.register <- ctx.Client
 
 	data, _ := json.Marshal(presentationStatus{
-		PresentationID: p.PresentationID,
+		PresentationID: room.ID,
 		Slides:         room.slides,
 		CurrentIndex:   room.currentIndex,
 	})
