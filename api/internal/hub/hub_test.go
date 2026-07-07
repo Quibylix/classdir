@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/golang-jwt/jwt/v5"
 
 	"classdir/api/internal/presentation"
 	"classdir/api/internal/shared/cfg"
@@ -81,11 +83,40 @@ func (m *mockStore) GetByID(ctx context.Context, id string) (*presentation.Prese
 	return nil, nil
 }
 
-func startClient(hub *Hub, conn *mockConn) {
-	WSHandler(hub, &mockAcceptor{conn: conn})(httptest.NewRecorder(), httptest.NewRequest("GET", "/ws/v1", nil))
+func startClient(hub *Hub, conn *mockConn, cookies ...*http.Cookie) {
+	req := httptest.NewRequest("GET", "/ws/v1", nil)
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+	WSHandler(hub, &mockAcceptor{conn: conn})(httptest.NewRecorder(), req)
+}
+
+func setJWTSecret() {
+	os.Setenv(cfg.EnvJWTSecret, "test-secret")
+}
+
+func signTestToken(t *testing.T) string {
+	t.Helper()
+	claims := jwt.RegisteredClaims{}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte("test-secret"))
+	if err != nil {
+		t.Fatalf("failed to sign test token: %v", err)
+	}
+	return signed
+}
+
+func authCookie(t *testing.T) *http.Cookie {
+	t.Helper()
+	return &http.Cookie{Name: cfg.CookieName, Value: signTestToken(t)}
 }
 
 func validUUID() string { return "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f" }
+
+func TestMain(m *testing.M) {
+	os.Setenv(cfg.EnvJWTSecret, "test-secret")
+	m.Run()
+}
 
 func testSlides() []presentation.Slide {
 	return []presentation.Slide{
@@ -196,7 +227,7 @@ func TestRoom_BroadcastsNextSlideToAllClients(t *testing.T) {
 	viewerA := newMockConn()
 	viewerB := newMockConn()
 
-	startClient(hub, controller)
+	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewerA)
 	startClient(hub, viewerB)
 
@@ -232,7 +263,7 @@ func TestRoom_BroadcastsPrevSlideToAllClients(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller)
+	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
 	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
@@ -268,7 +299,7 @@ func TestRoom_BroadcastsGoToSlideToAllClients(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller)
+	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
 	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
@@ -296,7 +327,7 @@ func TestRoom_ViewerCommandDoesNotBroadcast(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller)
+	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
 	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
@@ -325,7 +356,7 @@ func TestClient_HandleInit_Valid(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()
 
-	startClient(hub, conn)
+	startClient(hub, conn, authCookie(t))
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
@@ -353,7 +384,7 @@ func TestClient_HandleInit_InvalidUUID(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()
 
-	startClient(hub, conn)
+	startClient(hub, conn, authCookie(t))
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"not-a-uuid"`)
 	recvError(t, conn, cfg.ErrInvalidUUID)
@@ -367,7 +398,7 @@ func TestClient_HandleInit_NilPresentation(t *testing.T) {
 	})
 	conn := newMockConn()
 
-	startClient(hub, conn)
+	startClient(hub, conn, authCookie(t))
 
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 	recvError(t, conn, cfg.ErrNotFound)
@@ -379,7 +410,7 @@ func TestClient_HandleJoin_Valid(t *testing.T) {
 	controller := newMockConn()
 	viewer := newMockConn()
 
-	startClient(hub, controller)
+	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
 	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
@@ -424,14 +455,24 @@ func TestClient_HandleJoin_InvalidUUID(t *testing.T) {
 	recvError(t, conn, cfg.ErrInvalidUUID)
 }
 
+func TestClient_HandleInit_Unauthenticated(t *testing.T) {
+	hub := newTestHub()
+	conn := newMockConn()
+
+	startClient(hub, conn)
+
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+	recvError(t, conn, cfg.ErrUnauthorized)
+}
+
 func TestClient_HandleInit_DuplicateInit(t *testing.T) {
 	hub := newTestHub()
 
 	controller := newMockConn()
 	newController := newMockConn()
 
-	startClient(hub, controller)
-	startClient(hub, newController)
+	startClient(hub, controller, authCookie(t))
+	startClient(hub, newController, authCookie(t))
 
 	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 	recvData(t, controller)
@@ -458,7 +499,7 @@ func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 
 	controller := newMockConn()
 	viewer := newMockConn()
-	startClient(hub, controller)
+	startClient(hub, controller, authCookie(t))
 	startClient(hub, viewer)
 
 	sendCommand(t, controller, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
@@ -474,7 +515,7 @@ func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 	controller.Close(websocket.StatusNormalClosure, "test disconnect")
 
 	reconnector := newMockConn()
-	startClient(hub, reconnector)
+	startClient(hub, reconnector, authCookie(t))
 	sendCommand(t, reconnector, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
 	data := recvData(t, reconnector)

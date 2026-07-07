@@ -28,6 +28,11 @@ type InitHandler struct{}
 func (h InitHandler) Name() string { return CmdInitPresentation }
 
 func (h InitHandler) Handle(ctx CommandContext, params json.RawMessage) {
+	if !ctx.Client.Authenticated {
+		ctx.Client.writeError(cfg.ErrUnauthorized, cfg.ErrMsgInvalidToken)
+		return
+	}
+
 	var p InitParams
 	if err := json.Unmarshal(params, &p); err != nil {
 		ctx.Client.writeError(cfg.ErrInvalidJSON, cfg.ErrMsgInvalidJSON)

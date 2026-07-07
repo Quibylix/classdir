@@ -36,7 +36,7 @@ func main() {
 	if originPattern != "" {
 		originPatterns = []string{originPattern}
 	}
-	mux.Handle("GET /ws/v1", auth.AuthMiddleware(hub.WSHandler(h, hub.DefaultAcceptor{OriginPatterns: originPatterns})))
+	mux.Handle("GET /ws/v1", hub.WSHandler(h, hub.DefaultAcceptor{OriginPatterns: originPatterns}))
 
 	mux.Handle("/api/v1/", auth.AuthMiddleware(api))
 

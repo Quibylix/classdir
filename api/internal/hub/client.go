@@ -21,13 +21,16 @@ type Client struct {
 	conn wsConn
 	send chan []byte
 	room *Room
+
+	Authenticated bool
 }
 
 func NewClient(hub *Hub, conn wsConn) *Client {
 	return &Client{
-		hub:  hub,
-		conn: conn,
-		send: make(chan []byte, channelBuffer),
+		hub:           hub,
+		conn:          conn,
+		send:          make(chan []byte, channelBuffer),
+		Authenticated: false,
 	}
 }
 

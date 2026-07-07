@@ -23,7 +23,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path={CLIENT_LOGIN} element={<LoginPage />} />
             <Route path={CLIENT_CONFIGURE} element={<ProtectedRoute><PresentationListPage /></ProtectedRoute>} />
             <Route path={clientConfigure(':id')} element={<ProtectedRoute><PresentationDetailPage /></ProtectedRoute>} />
-            <Route path={clientPresent(':id')} element={<ProtectedRoute><PresentView /></ProtectedRoute>} />
+            <Route path={clientPresent(':id')} element={<PresentView />} />
             <Route path={clientControl(':id')} element={<ProtectedRoute><ControlView /></ProtectedRoute>} />
           </Routes>
         </MantineProvider>
