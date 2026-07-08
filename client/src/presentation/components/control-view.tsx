@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useParams, Link } from 'react-router'
 import {
-  Box, Button, Center, Code, Group, Loader, NumberInput, Stack, Text, Title,
+  Box, Button, Center, Code, Group, Loader, NumberInput, Slider, Stack, Text, Title, ActionIcon, Tooltip,
 } from '@mantine/core'
 import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft'
 import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight'
+import { PencilIcon } from '@phosphor-icons/react/dist/csr/Pencil'
+import { EyeIcon } from '@phosphor-icons/react/dist/csr/Eye'
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
 import { useSafeWebSocket } from '../../shared/hooks/use-websocket'
-import { WSOutputMessageSchema, type Slide } from '../types'
+import { WSOutputMessageSchema, type Slide, type AnnotationOperation, type AnnotationPoint } from '../types'
 import { usePresentation } from '../hooks/use-presentation'
 import { WS_V1, CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { WS_STATUS } from '../../shared/types'
-import { POST_MSG_TYPE, WS_CMD_INIT_PRESENTATION, WS_CMD_NEXT_SLIDE, WS_CMD_PREV_SLIDE, WS_CMD_GO_TO_SLIDE, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
+import { POST_MSG_TYPE, WS_CMD_INIT_PRESENTATION, WS_CMD_NEXT_SLIDE, WS_CMD_PREV_SLIDE, WS_CMD_GO_TO_SLIDE, WS_CMD_ANNOTATION, WS_EVENT_ANNOTATION_ADDED, ANNOTATION_COLORS, ANNOTATION_DEFAULT_COLOR, ANNOTATION_DEFAULT_THICKNESS, ANNOTATION_MIN_THICKNESS, ANNOTATION_MAX_THICKNESS, CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS, WS_EVENT_SLIDE_CHANGED } from '../cfg'
+import { visibleStrokes, drawStrokes, toPercent } from '../utils/annotation-canvas'
+import { uuidv7 } from '../../shared/util/uuid'
 
 function buildPresentHtml(slides: Slide[], initialSlide: number): string {
   const slidesHtml = slides.map(s => `<section>${s.content}</section>`).join('\n')
@@ -31,7 +36,7 @@ function buildPresentHtml(slides: Slide[], initialSlide: number): string {
   </div>
   <script src="${CDN_REVEAL_JS}"></script>
   <script>
-    Reveal.initialize({ transition: 'slide', progress: false, controls: false }).then(function() {
+    Reveal.initialize({ transition: 'slide', progress: false, controls: false, touch: false, scrollActivationWidth: null, }).then(function() {
       Reveal.slide(${initialSlide});
     });
     window.addEventListener('message', function(e) {
@@ -52,8 +57,15 @@ export function ControlView() {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [goToValue, setGoToValue] = useState('')
   const [roomCode, setRoomCode] = useState<string>()
+  const [drawMode, setDrawMode] = useState(false)
+  const [annotationColor, setAnnotationColor] = useState(ANNOTATION_DEFAULT_COLOR)
+  const [annotationThickness, setAnnotationThickness] = useState(ANNOTATION_DEFAULT_THICKNESS)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [currentPoints, setCurrentPoints] = useState<AnnotationPoint[]>([])
+  const [operationsBySlide, setOperationsBySlide] = useState<Record<string, AnnotationOperation[]>>({})
   const joinedRef = useRef(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}${WS_V1}`
 
@@ -67,20 +79,34 @@ export function ControlView() {
         return
       }
 
-      if ('event' in msg) {
+      if (!('event' in msg)) {
+        setSlideCount(msg.data.slides.length)
+        setCurrentSlide(msg.data.current_index)
+        if (msg.data.room_code) {
+          setRoomCode(msg.data.room_code)
+        }
+        setCachedHtml(buildPresentHtml(msg.data.slides, msg.data.current_index))
+        setLoading(false)
+        return
+      }
+
+      if (msg.event === WS_EVENT_SLIDE_CHANGED) {
         setCurrentSlide(msg.data.current_slide)
         iframeRef.current?.contentWindow?.postMessage({ type: POST_MSG_TYPE.Navigate, index: msg.data.current_slide }, window.location.origin)
         return
       }
 
-      setSlideCount(msg.data.slides.length)
-      setCurrentSlide(msg.data.current_index)
-      if (msg.data.room_code) {
-        setRoomCode(msg.data.room_code)
+      if (msg.event === WS_EVENT_ANNOTATION_ADDED) {
+        setOperationsBySlide(prev => {
+          const slideKey = String(currentSlide)
+          const existing = prev[slideKey] ?? []
+          if (existing.some(op => op.id === msg.data.id)) return prev
+          return { ...prev, [slideKey]: [...existing, msg.data] }
+        })
+        return
       }
-      setCachedHtml(buildPresentHtml(msg.data.slides, msg.data.current_index))
-      setLoading(false)
-      return;
+
+      setOperationsBySlide(msg.data.operations_by_slide)
     },
   })
 
@@ -93,6 +119,30 @@ export function ControlView() {
       joinedRef.current = false
     }
   }, [status, id, send])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const container = canvas?.parentElement
+    if (!container || !canvas) return
+
+    const observer = new ResizeObserver(() => {
+      canvas.width = container.offsetWidth
+      canvas.height = container.offsetHeight
+    })
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const ops = operationsBySlide[String(currentSlide)] ?? []
+    const strokes = visibleStrokes(ops)
+    drawStrokes(ctx, strokes, currentPoints, canvas.width, canvas.height)
+  }, [operationsBySlide, currentSlide, currentPoints])
 
   function handlePrev() {
     send({ command: WS_CMD_PREV_SLIDE, parameters: {} })
@@ -108,6 +158,63 @@ export function ControlView() {
     send({ command: WS_CMD_GO_TO_SLIDE, parameters: { slide_number: num - 1 } })
     setGoToValue('')
   }
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    setIsDrawing(true)
+    const rect = canvas.getBoundingClientRect()
+    setCurrentPoints([toPercent(e.clientX, e.clientY, rect)])
+    canvas.setPointerCapture(e.pointerId)
+  }, [])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    setCurrentPoints(prev => [...prev, toPercent(e.clientX, e.clientY, rect)])
+  }, [isDrawing])
+
+  const handlePointerUp = useCallback(() => {
+    if (!isDrawing) return
+    setIsDrawing(false)
+
+    const points = currentPoints
+    setCurrentPoints([])
+
+    if (points.length < 2) return
+
+    const id = uuidv7()
+    const op: AnnotationOperation = {
+      type: 'stroke',
+      id,
+      payload: { points, color: annotationColor, thickness: annotationThickness },
+    }
+
+    setOperationsBySlide(prev => {
+      const slideKey = String(currentSlide)
+      const existing = prev[slideKey] ?? []
+      return { ...prev, [slideKey]: [...existing, op] }
+    })
+
+    send({
+      command: WS_CMD_ANNOTATION,
+      parameters: {
+        type: 'stroke',
+        id,
+        payload: { points, color: annotationColor, thickness: annotationThickness },
+      },
+    })
+  }, [isDrawing, currentPoints, annotationColor, annotationThickness, currentSlide, send])
+
+  const handleClear = useCallback(() => {
+    const id = uuidv7()
+    send({
+      command: WS_CMD_ANNOTATION,
+      parameters: { type: 'clear', id },
+    })
+  }, [send])
 
   if (presLoading || loading) {
     return <Center h="100vh" bg="dark.9"><Loader /></Center>
@@ -154,15 +261,80 @@ export function ControlView() {
             {roomCode}
           </Code>
         )}
+        <Tooltip label={drawMode ? 'View mode' : 'Draw mode'}>
+          <ActionIcon
+            variant={drawMode ? 'filled' : 'outline'}
+            color={drawMode ? 'red' : 'gray'}
+            onClick={() => setDrawMode(v => !v)}
+            size="lg"
+          >
+            {drawMode ? <EyeIcon size={20} /> : <PencilIcon size={20} />}
+          </ActionIcon>
+        </Tooltip>
       </Group>
 
-      <iframe
-        ref={iframeRef}
-        srcDoc={cachedHtml}
-        title="Presentation"
-        style={{ width: '100%', height: 0, border: 'none', display: 'block', flex: 1 }}
-      />
+      {drawMode && (
+        <Group mb="md" gap="xs" wrap="nowrap">
+          <Group gap={4}>
+            {ANNOTATION_COLORS.map(c => (
+              <ActionIcon
+                key={c}
+                size="sm"
+                style={{
+                  backgroundColor: c,
+                  border: c === annotationColor ? '2px solid white' : '2px solid transparent',
+                  borderRadius: '50%',
+                }}
+                onClick={() => setAnnotationColor(c)}
+              />
+            ))}
+          </Group>
+          <Slider
+            value={annotationThickness}
+            onChange={setAnnotationThickness}
+            min={ANNOTATION_MIN_THICKNESS}
+            max={ANNOTATION_MAX_THICKNESS}
+            style={{ width: 80 }}
+          />
+          <ActionIcon variant="outline" color="gray" onClick={handleClear}>
+            <TrashIcon size={16} />
+          </ActionIcon>
+        </Group>
+      )}
 
+      <Box pos="relative" flex={1}>
+        <Box
+          inset={0}
+          m="auto"
+          pos="absolute"
+          maw="100%"
+          mah="100%"
+          style={{ aspectRatio: '48/35' }}
+        >
+          <iframe
+            ref={iframeRef}
+            srcDoc={cachedHtml}
+            title="Presentation"
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          />
+          <canvas
+            ref={canvasRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: drawMode ? 'auto' : 'none',
+              cursor: drawMode ? 'crosshair' : 'default',
+              touchAction: drawMode ? 'none' : 'auto',
+            }}
+            onPointerDown={drawMode ? handlePointerDown : undefined}
+            onPointerMove={drawMode ? handlePointerMove : undefined}
+            onPointerUp={drawMode ? handlePointerUp : undefined}
+          />
+        </Box>
+      </Box>
       <Group justify="center" mb="md">
         <Button
           size="xl"
