@@ -15,11 +15,14 @@ const (
 	CmdNextSlide        = "next_slide"
 	CmdPrevSlide        = "prev_slide"
 	CmdGoToSlide        = "go_to_slide"
+	CmdAnnotation       = "annotation"
 )
 
 const (
-	EventSlideChanged     = "slide_changed"
-	EventPresentationInit = "presentation_initialized"
+	EventSlideChanged       = "slide_changed"
+	EventPresentationInit   = "presentation_initialized"
+	EventAnnotationAdded    = "annotation_added"
+	EventAnnotationsBatch   = "annotations_batch"
 )
 
 const channelBuffer = 256

@@ -3,6 +3,7 @@ package hub
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -114,6 +115,10 @@ func authCookie(t *testing.T) *http.Cookie {
 }
 
 func validUUID() string { return "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f" }
+
+func validUUIDN(n int) string {
+	return fmt.Sprintf("0192e5a0-7b7f-7b7f-8b7f-%012x", n)
+}
 
 func TestMain(m *testing.M) {
 	os.Setenv(cfg.EnvJWTSecret, "test-secret")
@@ -231,6 +236,7 @@ func initAndGetCode(t *testing.T, conn *mockConn) string {
 	t.Helper()
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 	data := recvData(t, conn)
+	recvAnnotationsBatch(t, conn)
 	var ir initResponse
 	if err := json.Unmarshal(data, &ir); err != nil {
 		t.Fatalf("failed to unmarshal init data: %v", err)
@@ -258,9 +264,11 @@ func TestRoom_BroadcastsNextSlideToAllClients(t *testing.T) {
 
 	sendCommand(t, viewerA, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewerA)
+	recvAnnotationsBatch(t, viewerA)
 
 	sendCommand(t, viewerB, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewerB)
+	recvAnnotationsBatch(t, viewerB)
 
 	sendCommand(t, controller, CmdNextSlide, "")
 
@@ -292,6 +300,7 @@ func TestRoom_BroadcastsPrevSlideToAllClients(t *testing.T) {
 
 	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
 
 	sendCommand(t, controller, CmdNextSlide, "")
 	recvEvent(t, controller, EventSlideChanged)
@@ -327,6 +336,7 @@ func TestRoom_BroadcastsGoToSlideToAllClients(t *testing.T) {
 
 	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
 
 	sendCommand(t, controller, CmdGoToSlide, `"slide_number":1`)
 
@@ -354,6 +364,7 @@ func TestRoom_ViewerCommandDoesNotBroadcast(t *testing.T) {
 
 	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
 
 	sendCommand(t, viewer, CmdGoToSlide, `"slide_number":2`)
 	sendCommand(t, controller, CmdNextSlide, "")
@@ -380,6 +391,7 @@ func TestClient_HandleInit_Valid(t *testing.T) {
 	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
 	data := recvData(t, conn)
+	recvAnnotationsBatch(t, conn)
 	var ir initResponse
 	if err := json.Unmarshal(data, &ir); err != nil {
 		t.Fatalf("failed to unmarshal init data: %v", err)
@@ -438,6 +450,7 @@ func TestClient_HandleJoin_Valid(t *testing.T) {
 
 	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	data := recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
 
 	var join struct {
 		PresentationID string               `json:"presentation_id"`
@@ -535,6 +548,238 @@ func TestReadPump_RateLimit_Authenticated(t *testing.T) {
 	recvError(t, conn, cfg.ErrRateLimit)
 }
 
+// --- annotation test helpers ---
+
+type annotationAddedTestEvent struct {
+	Event string `json:"event"`
+	Data  struct {
+		Type    string          `json:"type"`
+		ID      string          `json:"id"`
+		Payload json.RawMessage `json:"payload,omitempty"`
+	} `json:"data"`
+}
+
+func recvAnnotationAdded(t *testing.T, conn *mockConn, expectedType string) annotationAddedTestEvent {
+	t.Helper()
+	select {
+	case msg := <-conn.writeCh:
+		var ev annotationAddedTestEvent
+		if err := json.Unmarshal(msg, &ev); err != nil {
+			t.Fatalf("failed to unmarshal annotation event: %v (raw: %s)", err, string(msg))
+		}
+		if ev.Event != EventAnnotationAdded {
+			t.Fatalf("expected event %s, got %s", EventAnnotationAdded, ev.Event)
+		}
+		if ev.Data.Type != expectedType {
+			t.Fatalf("expected type %s, got %s", expectedType, ev.Data.Type)
+		}
+		return ev
+	case <-time.After(time.Second):
+		t.Fatal("timeout waiting for annotation_added event")
+		return annotationAddedTestEvent{}
+	}
+}
+
+type annotationsBatchTestEvent struct {
+	Event string `json:"event"`
+	Data  struct {
+		OperationsBySlide map[string][]json.RawMessage `json:"operations_by_slide"`
+	} `json:"data"`
+}
+
+func recvAnnotationsBatch(t *testing.T, conn *mockConn) annotationsBatchTestEvent {
+	t.Helper()
+	select {
+	case msg := <-conn.writeCh:
+		var ev annotationsBatchTestEvent
+		if err := json.Unmarshal(msg, &ev); err != nil {
+			t.Fatalf("failed to unmarshal batch event: %v (raw: %s)", err, string(msg))
+		}
+		if ev.Event != EventAnnotationsBatch {
+			t.Fatalf("expected event %s, got %s", EventAnnotationsBatch, ev.Event)
+		}
+		return ev
+	case <-time.After(time.Second):
+		t.Fatal("timeout waiting for annotations_batch event")
+		return annotationsBatchTestEvent{}
+	}
+}
+
+func TestAnnotation_StrokeAdded(t *testing.T) {
+	hub := newTestHub()
+
+	controller := newMockConn()
+	viewer := newMockConn()
+
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
+
+	code := initAndGetCode(t, controller)
+
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
+	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(1)+`","payload":{"points":[{"x":10,"y":20},{"x":30,"y":40}],"color":"#ff0000","thickness":3}`)
+
+	evC := recvAnnotationAdded(t, controller, OpStroke)
+	evV := recvAnnotationAdded(t, viewer, OpStroke)
+
+	if evC.Data.ID != validUUIDN(1) {
+		t.Fatalf("expected id %s, got %s", validUUIDN(1), evC.Data.ID)
+	}
+	if evC.Data.ID != evV.Data.ID {
+		t.Fatal("controller and viewer got different ids")
+	}
+	if evC.Data.Payload == nil {
+		t.Fatal("expected payload for stroke")
+	}
+	var payload AnnotationPayload
+	if err := json.Unmarshal(evC.Data.Payload, &payload); err != nil {
+		t.Fatalf("failed to unmarshal payload: %v", err)
+	}
+	if len(payload.Points) != 2 {
+		t.Fatalf("expected 2 points, got %d", len(payload.Points))
+	}
+	if payload.Color != "#ff0000" {
+		t.Fatalf("expected color #ff0000, got %s", payload.Color)
+	}
+	if payload.Thickness != 3 {
+		t.Fatalf("expected thickness 3, got %f", payload.Thickness)
+	}
+}
+
+func TestAnnotation_Cleared(t *testing.T) {
+	hub := newTestHub()
+
+	controller := newMockConn()
+	viewer := newMockConn()
+
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
+
+	code := initAndGetCode(t, controller)
+
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
+	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(2)+`","payload":{"points":[{"x":10,"y":20}],"color":"#00ff00","thickness":2}`)
+	recvAnnotationAdded(t, controller, OpStroke)
+	recvAnnotationAdded(t, viewer, OpStroke)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"clear","id":"`+validUUIDN(3)+`"`)
+
+	evC := recvAnnotationAdded(t, controller, OpClear)
+	evV := recvAnnotationAdded(t, viewer, OpClear)
+
+	if evC.Data.ID != validUUIDN(3) {
+		t.Fatalf("expected id %s, got %s", validUUIDN(3), evC.Data.ID)
+	}
+	if evC.Data.Payload != nil {
+		t.Fatal("expected no payload for clear")
+	}
+	if evV.Data.ID != evC.Data.ID {
+		t.Fatal("controller and viewer got different ids")
+	}
+}
+
+func TestAnnotation_ViewerIgnored(t *testing.T) {
+	hub := newTestHub()
+
+	controller := newMockConn()
+	viewer := newMockConn()
+
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
+
+	code := initAndGetCode(t, controller)
+
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
+	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
+
+	sendCommand(t, viewer, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(4)+`","payload":{"points":[{"x":0,"y":0}],"color":"#000","thickness":1}`)
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(5)+`","payload":{"points":[{"x":0,"y":0}],"color":"#000","thickness":1}`)
+
+	evC := recvAnnotationAdded(t, controller, OpStroke)
+	if evC.Data.ID != validUUIDN(5) {
+		t.Fatalf("expected id %s, got %s", validUUIDN(5), evC.Data.ID)
+	}
+}
+
+func TestAnnotation_BatchOnJoin(t *testing.T) {
+	hub := newTestHub()
+
+	controller := newMockConn()
+
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+
+	code := initAndGetCode(t, controller)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(10)+`","payload":{"points":[{"x":10,"y":20}],"color":"#ff0000","thickness":3}`)
+	recvAnnotationAdded(t, controller, OpStroke)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"clear","id":"`+validUUIDN(11)+`"`)
+	recvAnnotationAdded(t, controller, OpClear)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(12)+`","payload":{"points":[{"x":50,"y":60}],"color":"#0000ff","thickness":5}`)
+	recvAnnotationAdded(t, controller, OpStroke)
+
+	viewer := newMockConn()
+	startClient(hub, viewer, DefaultRateLimitProvider{})
+
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
+	recvData(t, viewer)
+	batch := recvAnnotationsBatch(t, viewer)
+
+	if len(batch.Data.OperationsBySlide["0"]) != 3 {
+		t.Fatalf("expected 3 operations for slide 0, got %d", len(batch.Data.OperationsBySlide["0"]))
+	}
+}
+
+func TestAnnotation_OperationsPerSlide(t *testing.T) {
+	hub := newTestHub()
+
+	controller := newMockConn()
+	viewer := newMockConn()
+
+	startClient(hub, controller, DefaultRateLimitProvider{}, authCookie(t))
+	startClient(hub, viewer, DefaultRateLimitProvider{})
+
+	code := initAndGetCode(t, controller)
+
+	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
+	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(20)+`","payload":{"points":[{"x":0,"y":0}],"color":"#f00","thickness":1}`)
+	recvAnnotationAdded(t, controller, OpStroke)
+	recvAnnotationAdded(t, viewer, OpStroke)
+
+	sendCommand(t, controller, CmdGoToSlide, `"slide_number":1`)
+	recvEvent(t, controller, EventSlideChanged)
+	recvEvent(t, viewer, EventSlideChanged)
+
+	sendCommand(t, controller, CmdAnnotation, `"type":"stroke","id":"`+validUUIDN(21)+`","payload":{"points":[{"x":100,"y":100}],"color":"#0f0","thickness":2}`)
+	recvAnnotationAdded(t, controller, OpStroke)
+	recvAnnotationAdded(t, viewer, OpStroke)
+
+	viewer2 := newMockConn()
+	startClient(hub, viewer2, DefaultRateLimitProvider{})
+
+	sendCommand(t, viewer2, CmdJoinRoom, `"room_code":"`+code+`"`)
+	recvData(t, viewer2)
+	batch := recvAnnotationsBatch(t, viewer2)
+
+	if len(batch.Data.OperationsBySlide["0"]) != 1 {
+		t.Fatalf("expected 1 operation for slide 0, got %d", len(batch.Data.OperationsBySlide["0"]))
+	}
+	if len(batch.Data.OperationsBySlide["1"]) != 1 {
+		t.Fatalf("expected 1 operation for slide 1, got %d", len(batch.Data.OperationsBySlide["1"]))
+	}
+}
+
 func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 	hub := newTestHub()
 
@@ -547,6 +792,7 @@ func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 
 	sendCommand(t, viewer, CmdJoinRoom, `"room_code":"`+code+`"`)
 	recvData(t, viewer)
+	recvAnnotationsBatch(t, viewer)
 
 	sendCommand(t, controller, CmdNextSlide, "")
 	recvEvent(t, controller, EventSlideChanged)
@@ -559,6 +805,7 @@ func TestClient_ReconnectPreservesCurrentIndex(t *testing.T) {
 	sendCommand(t, reconnector, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
 
 	data := recvData(t, reconnector)
+	recvAnnotationsBatch(t, reconnector)
 	var s struct {
 		CurrentIndex int `json:"current_index"`
 	}

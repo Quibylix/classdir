@@ -78,6 +78,7 @@ func (h InitHandler) Handle(ctx CommandContext, params json.RawMessage) {
 		RoomCode:       room.Code,
 	})
 	ctx.Client.writeData(data)
+	room.sendAnnotationsBatch(ctx.Client)
 }
 
 type JoinHandler struct{}
@@ -111,6 +112,7 @@ func (h JoinHandler) Handle(ctx CommandContext, params json.RawMessage) {
 		CurrentIndex:   room.currentIndex,
 	})
 	ctx.Client.writeData(data)
+	room.sendAnnotationsBatch(ctx.Client)
 }
 
 func init() {

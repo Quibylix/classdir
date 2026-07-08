@@ -14,29 +14,31 @@ type roomCommand struct {
 }
 
 type Room struct {
-	ID           string
-	Code         string
-	clients      map[*Client]bool
-	controller   *Client
-	register     chan *Client
-	unregister   chan *Client
-	done         chan struct{}
-	commands     chan roomCommand
-	currentIndex int
-	slides       []presentation.Slide
-	hub          *Hub
+	ID                string
+	Code              string
+	clients           map[*Client]bool
+	controller        *Client
+	register          chan *Client
+	unregister        chan *Client
+	done              chan struct{}
+	commands          chan roomCommand
+	currentIndex      int
+	slides            []presentation.Slide
+	hub               *Hub
+	operationsBySlide map[int][]AnnotationOperation
 }
 
 const roomDeleteTimeout = 1 * time.Minute
 
 func NewRoom(id string) *Room {
 	return &Room{
-		ID:         id,
-		clients:    make(map[*Client]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		commands:   make(chan roomCommand, channelBuffer),
-		done:       make(chan struct{}),
+		ID:                id,
+		clients:           make(map[*Client]bool),
+		register:          make(chan *Client),
+		unregister:        make(chan *Client),
+		commands:          make(chan roomCommand, channelBuffer),
+		done:              make(chan struct{}),
+		operationsBySlide: make(map[int][]AnnotationOperation),
 	}
 }
 
@@ -109,6 +111,45 @@ func (r *Room) broadcastSlideChanged() {
 		case client.send <- e:
 		default:
 		}
+	}
+}
+
+func (r *Room) broadcastAnnotationAdded(op AnnotationOperation) {
+	e, err := json.Marshal(annotationAddedEvent{
+		Event: EventAnnotationAdded,
+		Data: annotationAddedData{
+			Type:    op.Type,
+			ID:      op.ID,
+			Payload: op.Payload,
+		},
+	})
+	if err != nil {
+		return
+	}
+	for client := range r.clients {
+		select {
+		case client.send <- e:
+		default:
+		}
+	}
+}
+
+func (r *Room) sendAnnotationsBatch(client *Client) {
+	if r.operationsBySlide == nil {
+		return
+	}
+	e, err := json.Marshal(annotationsBatchEvent{
+		Event: EventAnnotationsBatch,
+		Data: annotationsBatchData{
+			OperationsBySlide: r.operationsBySlide,
+		},
+	})
+	if err != nil {
+		return
+	}
+	select {
+	case client.send <- e:
+	default:
 	}
 }
 
