@@ -13,12 +13,17 @@ type roomCommand struct {
 	sender  *Client
 }
 
+type registrationRequest struct {
+	client       *Client
+	isController bool
+}
+
 type Room struct {
 	ID                string
 	Code              string
 	clients           map[*Client]bool
 	controller        *Client
-	register          chan *Client
+	register          chan *registrationRequest
 	unregister        chan *Client
 	done              chan struct{}
 	commands          chan roomCommand
@@ -30,15 +35,19 @@ type Room struct {
 
 const roomDeleteTimeout = 1 * time.Minute
 
-func NewRoom(id string) *Room {
+func NewRoom(id, code string, hub *Hub, slides []presentation.Slide) *Room {
 	return &Room{
 		ID:                id,
+		Code:              code,
 		clients:           make(map[*Client]bool),
-		register:          make(chan *Client),
+		register:          make(chan *registrationRequest),
 		unregister:        make(chan *Client),
 		commands:          make(chan roomCommand, channelBuffer),
 		done:              make(chan struct{}),
 		operationsBySlide: make(map[int][]AnnotationOperation),
+		currentIndex:      0,
+		hub:               hub,
+		slides:            slides,
 	}
 }
 
@@ -50,18 +59,17 @@ func (r *Room) Run() {
 
 	for {
 		select {
-		case client := <-r.register:
+		case req := <-r.register:
 			if deleteTimer != nil {
 				deleteTimer.Stop()
 				deleteTimer = nil
 				deleteCh = nil
 			}
-			r.clients[client] = true
+			r.handleClientRegistration(req)
 
 		case client := <-r.unregister:
 			if _, ok := r.clients[client]; ok {
 				delete(r.clients, client)
-				close(client.send)
 				if client == r.controller {
 					r.controller = nil
 				}
@@ -86,6 +94,37 @@ func (r *Room) Run() {
 			}
 		}
 	}
+}
+
+func (r *Room) handleClientRegistration(req *registrationRequest) {
+	if req.isController {
+		r.controller = req.client
+	}
+	r.clients[req.client] = true
+
+	initResponse := struct {
+		Data presentationStatus `json:"data"`
+	}{
+		Data: presentationStatus{
+			PresentationID: r.ID,
+			Slides:         r.slides,
+			CurrentIndex:   r.currentIndex,
+			RoomCode:       "",
+		},
+	}
+
+	if req.isController {
+		initResponse.Data.RoomCode = r.Code
+	}
+
+	data, _ := json.Marshal(initResponse)
+
+	select {
+	case req.client.send <- data:
+	default:
+	}
+
+	r.sendAnnotationsBatch(req.client)
 }
 
 func (r *Room) broadcastSlideChanged() {
@@ -151,8 +190,4 @@ func (r *Room) sendAnnotationsBatch(client *Client) {
 	case client.send <- e:
 	default:
 	}
-}
-
-func (r *Room) SetHub(h *Hub) {
-	r.hub = h
 }

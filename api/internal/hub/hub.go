@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -19,10 +20,10 @@ const (
 )
 
 const (
-	EventSlideChanged       = "slide_changed"
-	EventPresentationInit   = "presentation_initialized"
-	EventAnnotationAdded    = "annotation_added"
-	EventAnnotationsBatch   = "annotations_batch"
+	EventSlideChanged     = "slide_changed"
+	EventPresentationInit = "presentation_initialized"
+	EventAnnotationAdded  = "annotation_added"
+	EventAnnotationsBatch = "annotations_batch"
 )
 
 const channelBuffer = 256
@@ -42,19 +43,28 @@ func NewHub(store presentation.Store) *Hub {
 	}
 }
 
-func (h *Hub) GetOrCreateRoom(id string) *Room {
+func (h *Hub) GetOrCreateRoom(id string) (*Room, error) {
+	pres, err := h.store.GetByID(context.Background(), id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if pres == nil {
+		return nil, presentation.ErrNotFound
+	}
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if room, ok := h.rooms[id]; ok {
-		return room
+	if existingRoom, ok := h.rooms[id]; ok {
+		return existingRoom, nil
 	}
-	room := NewRoom(id)
-	room.Code = h.generateCodeLocked()
-	room.SetHub(h)
+
+	room := NewRoom(id, h.generateCodeLocked(), h, pres.Slides)
 	h.rooms[id] = room
 	h.roomsByCode[room.Code] = room
 	go room.Run()
-	return room
+	return room, nil
 }
 
 func (h *Hub) GetRoomByCode(code string) *Room {

@@ -42,6 +42,7 @@ const (
 	ErrMsgDeleteSlide        = "failed to delete slide"
 	ErrMsgMissingContent     = "content is required"
 	ErrMsgInvalidSlideOrder  = "invalid slide_order: one or more ids do not belong to this presentation"
+	ErrMsgCreateRoom         = "failed to create room"
 	ErrMsgRoomClosed         = "room is closed"
 	ErrMsgRateLimit          = "too many requests"
 )

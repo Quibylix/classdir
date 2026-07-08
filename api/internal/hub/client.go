@@ -26,27 +26,38 @@ type Client struct {
 
 	Authenticated bool
 	limiter       *rate.Limiter
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func NewClient(hub *Hub, conn wsConn) *Client {
+	cxt, cancel := context.WithCancel(context.Background())
+
 	return &Client{
 		hub:           hub,
 		conn:          conn,
 		send:          make(chan []byte, channelBuffer),
 		Authenticated: false,
+		ctx:           cxt,
+		cancel:        cancel,
 	}
 }
 
 func (c *Client) ReadPump() {
 	defer func() {
 		if c.room != nil {
-			c.room.unregister <- c
+			select {
+			case c.room.unregister <- c:
+			case <-c.room.done:
+			}
 		}
+		c.cancel()
 		c.conn.Close(websocket.StatusNormalClosure, "connection closed")
 	}()
 
 	for {
-		_, msg, err := c.conn.Read(context.Background())
+		_, msg, err := c.conn.Read(c.ctx)
 		if err != nil {
 			break
 		}
@@ -66,12 +77,20 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) WritePump() {
-	defer c.conn.Close(websocket.StatusNormalClosure, "connection closed")
+	defer func() {
+		c.cancel()
+		c.conn.Close(websocket.StatusNormalClosure, "connection closed")
+	}()
 
-	for msg := range c.send {
-		err := c.conn.Write(context.Background(), websocket.MessageText, msg)
-		if err != nil {
-			break
+	for {
+		select {
+		case msg := <-c.send:
+			err := c.conn.Write(c.ctx, websocket.MessageText, msg)
+			if err != nil {
+				return
+			}
+		case <-c.ctx.Done():
+			return
 		}
 	}
 }
@@ -83,19 +102,28 @@ func (c *Client) handleCommand(cmd Command) {
 	}
 	if c.room != nil {
 		if h, ok := roomHandlers[cmd.Command]; ok {
-			c.room.commands <- roomCommand{handler: h, params: cmd.Parameters, sender: c}
+			select {
+			case c.room.commands <- roomCommand{handler: h, params: cmd.Parameters, sender: c}:
+			case <-c.room.done:
+			}
 		}
 	}
 }
 
 func (c *Client) writeData(data json.RawMessage) {
 	resp, _ := json.Marshal(response.JSONResponse{Data: data})
-	c.send <- resp
+	select {
+	case c.send <- resp:
+	case <-c.ctx.Done():
+	}
 }
 
 func (c *Client) writeError(code, message string) {
 	resp, _ := json.Marshal(response.ErrorResponse{
 		Error: response.ErrorData{Code: code, Message: message},
 	})
-	c.send <- resp
+	select {
+	case c.send <- resp:
+	default:
+	}
 }

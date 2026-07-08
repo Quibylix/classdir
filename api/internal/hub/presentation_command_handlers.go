@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"context"
 	"encoding/json"
 
 	"classdir/api/internal/presentation"
@@ -45,40 +44,26 @@ func (h InitHandler) Handle(ctx CommandContext, params json.RawMessage) {
 		return
 	}
 
-	pres, err := ctx.Hub.Store().GetByID(context.Background(), p.PresentationID)
-	if err != nil {
-		ctx.Client.writeError(cfg.ErrInternalError, cfg.ErrMsgGetPresentation)
-		return
-	}
-	if pres == nil {
+	room, err := ctx.Hub.GetOrCreateRoom(p.PresentationID)
+
+	if err == presentation.ErrNotFound {
 		ctx.Client.writeError(cfg.ErrNotFound, cfg.ErrMsgNotFound)
 		return
 	}
 
-	room := ctx.Hub.GetOrCreateRoom(p.PresentationID)
-	room.slides = pres.Slides
-	if room.currentIndex >= len(room.slides) {
-		room.currentIndex = 0
+	if err != nil {
+		ctx.Client.writeError(cfg.ErrInternalError, cfg.ErrMsgCreateRoom)
+		return
 	}
 
 	ctx.Client.room = room
-	room.controller = ctx.Client
-
 	select {
-	case room.register <- ctx.Client:
+	case room.register <- &registrationRequest{client: ctx.Client, isController: true}:
 	case <-room.done:
 		ctx.Client.writeError(cfg.ErrInternalError, cfg.ErrMsgRoomClosed)
 		return
 	}
 
-	data, _ := json.Marshal(presentationStatus{
-		PresentationID: p.PresentationID,
-		Slides:         pres.Slides,
-		CurrentIndex:   room.currentIndex,
-		RoomCode:       room.Code,
-	})
-	ctx.Client.writeData(data)
-	room.sendAnnotationsBatch(ctx.Client)
 }
 
 type JoinHandler struct{}
@@ -100,19 +85,11 @@ func (h JoinHandler) Handle(ctx CommandContext, params json.RawMessage) {
 
 	ctx.Client.room = room
 	select {
-	case room.register <- ctx.Client:
+	case room.register <- &registrationRequest{client: ctx.Client, isController: false}:
 	case <-room.done:
 		ctx.Client.writeError(cfg.ErrInternalError, cfg.ErrMsgRoomClosed)
 		return
 	}
-
-	data, _ := json.Marshal(presentationStatus{
-		PresentationID: room.ID,
-		Slides:         room.slides,
-		CurrentIndex:   room.currentIndex,
-	})
-	ctx.Client.writeData(data)
-	room.sendAnnotationsBatch(ctx.Client)
 }
 
 func init() {
