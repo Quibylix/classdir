@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import type { EditorView } from 'codemirror'
 import { Box, Button, Group, Paper, Stack } from '@mantine/core'
-import { CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS } from '../cfg'
+import { buildPreviewHtml } from '../utils/reveal-html'
 import type { Slide } from '../types'
 
 type SlideEditorProps = {
@@ -9,32 +9,6 @@ type SlideEditorProps = {
   currentIndex: number
   onSave: (index: number, content: string) => void
   isSaving: boolean
-}
-
-function buildPreviewHtml(allSlides: Slide[], targetIndex: number): string {
-  const slidesHtml = allSlides.map((s) => `<section>${s.content}</section>`).join('\n')
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <link rel="stylesheet" href="${CDN_REVEAL_CSS}">
-  <link rel="stylesheet" href="${CDN_REVEAL_THEME_CSS}">
-</head>
-<body>
-  <div class="reveal" id="reveal" style="opacity: 0;">
-    <div class="slides">
-${slidesHtml}
-    </div>
-  </div>
-  <script src="${CDN_REVEAL_JS}"></script>
-  <script>
-    Reveal.initialize({transition: 'none', progress: false}).then(() => {
-      Reveal.slide(${targetIndex});
-      Reveal.configure({ transition: 'slide'})
-      document.getElementById('reveal').style.opacity = '1';
-    });
-  </script>
-</body>
-</html>`
 }
 
 export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEditorProps) {
