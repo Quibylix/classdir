@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router'
 import {
   Box, Button, Center, Code, Group, Loader, NumberInput, Slider, Stack, Text, Title, ActionIcon, Tooltip,
@@ -9,12 +9,11 @@ import { PencilIcon } from '@phosphor-icons/react/dist/csr/Pencil'
 import { EyeIcon } from '@phosphor-icons/react/dist/csr/Eye'
 import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
 import { useSlideShow } from '../hooks/use-slide-show'
+import { useAnnotation } from '../hooks/use-annotation'
 import { usePresentation } from '../hooks/use-presentation'
 import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
-import { WS_CMD_INIT_PRESENTATION, WS_CMD_NEXT_SLIDE, WS_CMD_PREV_SLIDE, WS_CMD_GO_TO_SLIDE, WS_CMD_ANNOTATION, ANNOTATION_COLORS, ANNOTATION_DEFAULT_COLOR, ANNOTATION_DEFAULT_THICKNESS, ANNOTATION_MIN_THICKNESS, ANNOTATION_MAX_THICKNESS } from '../cfg'
-import { visibleStrokes, drawStrokes, toPercent } from '../utils/annotation-canvas'
-import type { AnnotationPoint, AnnotationOperation } from '../types'
-import { uuidv7 } from '../../shared/util/uuid'
+import { WS_CMD_INIT_PRESENTATION, WS_CMD_NEXT_SLIDE, WS_CMD_PREV_SLIDE, WS_CMD_GO_TO_SLIDE, ANNOTATION_COLORS, ANNOTATION_MIN_THICKNESS, ANNOTATION_MAX_THICKNESS } from '../cfg'
+import { visibleStrokes, drawStrokes } from '../utils/annotation-canvas'
 
 export function ControlView() {
   const { id } = useParams<{ id: string }>()
@@ -23,11 +22,8 @@ export function ControlView() {
     useSlideShow(id ? { command: WS_CMD_INIT_PRESENTATION, parameters: { presentation_id: id } } : null)
 
   const [goToValue, setGoToValue] = useState('')
-  const [drawMode, setDrawMode] = useState(false)
-  const [annotationColor, setAnnotationColor] = useState(ANNOTATION_DEFAULT_COLOR)
-  const [annotationThickness, setAnnotationThickness] = useState(ANNOTATION_DEFAULT_THICKNESS)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [currentPoints, setCurrentPoints] = useState<AnnotationPoint[]>([])
+  const { drawMode, setDrawMode, annotationColor, setAnnotationColor, annotationThickness, setAnnotationThickness, currentPoints, handlePointerDown, handlePointerMove, handlePointerUp, handleClear } =
+    useAnnotation({ send, currentSlide, setOperationsBySlide, canvasRef })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -67,63 +63,6 @@ export function ControlView() {
     send({ command: WS_CMD_GO_TO_SLIDE, parameters: { slide_number: num - 1 } })
     setGoToValue('')
   }
-
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    setIsDrawing(true)
-    const rect = canvas.getBoundingClientRect()
-    setCurrentPoints([toPercent(e.clientX, e.clientY, rect)])
-    canvas.setPointerCapture(e.pointerId)
-  }, [])
-
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const rect = canvas.getBoundingClientRect()
-    setCurrentPoints(prev => [...prev, toPercent(e.clientX, e.clientY, rect)])
-  }, [isDrawing])
-
-  const handlePointerUp = useCallback(() => {
-    if (!isDrawing) return
-    setIsDrawing(false)
-
-    const points = currentPoints
-    setCurrentPoints([])
-
-    if (points.length < 2) return
-
-    const id = uuidv7()
-    const op: AnnotationOperation = {
-      type: 'stroke',
-      id,
-      payload: { points, color: annotationColor, thickness: annotationThickness },
-    }
-
-    setOperationsBySlide(prev => {
-      const slideKey = String(currentSlide)
-      const existing = prev[slideKey] ?? []
-      return { ...prev, [slideKey]: [...existing, op] }
-    })
-
-    send({
-      command: WS_CMD_ANNOTATION,
-      parameters: {
-        type: 'stroke',
-        id,
-        payload: { points, color: annotationColor, thickness: annotationThickness },
-      },
-    })
-  }, [isDrawing, currentPoints, annotationColor, annotationThickness, currentSlide, send])
-
-  const handleClear = useCallback(() => {
-    const id = uuidv7()
-    send({
-      command: WS_CMD_ANNOTATION,
-      parameters: { type: 'clear', id },
-    })
-  }, [send])
 
   if (presLoading || loading) {
     return <Center h="100vh" bg="dark.9"><Loader /></Center>
