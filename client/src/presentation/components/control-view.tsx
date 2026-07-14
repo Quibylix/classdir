@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router'
 import {
   Box, Button, Center, Code, Group, Loader, NumberInput, Slider, Stack, Text, ActionIcon, Paper, Container, Modal,
@@ -17,30 +17,18 @@ import { visibleStrokes, drawStrokes } from '../utils/annotation-canvas'
 
 export function ControlView() {
   const { id } = useParams<{ id: string }>()
-  const { send, cachedHtml, slideCount, currentSlide, loading, fetchError, roomCode, iframeRef, canvasRef, operationsBySlide, setOperationsBySlide } =
+  const { send, cachedHtml, slideCount, currentSlide, loading, fetchError, roomCode, iframeRef, canvasRef, operationsBySlide } =
     useSlideShow(id ? { command: WS_CMD_INIT_PRESENTATION, parameters: { presentation_id: id } } : null)
   const { drawMode, setDrawMode, annotationColor, setAnnotationColor, annotationThickness, setAnnotationThickness, currentPoints, handlePointerDown, handlePointerMove, handlePointerUp, handleClear } =
-    useAnnotation({ send, currentSlide, setOperationsBySlide, canvasRef })
+    useAnnotation({ send, canvasRef })
   const { goToValue, setGoToValue, goToModalOpen, setGoToModalOpen, handleZoneClick, handleGoToSubmit } =
     useSlideGestures({ send, slideCount, currentSlide })
 
   const [drawMenuOpen, setDrawMenuOpen] = useState(false)
   const [showRoomCode, setShowRoomCode] = useState(false)
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const container = canvas?.parentElement
-    if (!container || !canvas) return
 
-    const observer = new ResizeObserver(() => {
-      canvas.width = container.offsetWidth
-      canvas.height = container.offsetHeight
-    })
-    observer.observe(container)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
+  const triggerRedraw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -49,7 +37,32 @@ export function ControlView() {
     const ops = operationsBySlide[String(currentSlide)] ?? []
     const strokes = visibleStrokes(ops)
     drawStrokes(ctx, strokes, currentPoints, canvas.width, canvas.height)
-  }, [operationsBySlide, currentSlide, currentPoints])
+  }, [canvasRef, operationsBySlide, currentPoints, currentSlide])
+
+  useEffect(() => {
+    if (loading) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const parent = canvas.parentElement
+    if (!parent) return
+
+    const observer = new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = parent.offsetWidth * dpr
+      canvas.height = parent.offsetHeight * dpr
+
+      triggerRedraw()
+    })
+
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [loading, canvasRef, triggerRedraw])
+
+  useEffect(() => {
+    if (loading) return
+    triggerRedraw()
+  }, [loading, triggerRedraw])
 
   if (loading) {
     return <Center h="100vh" bg="dark.9"><Loader /></Center>

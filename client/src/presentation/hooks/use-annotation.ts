@@ -1,17 +1,15 @@
 import { useState, useCallback } from 'react'
 import { toPercent } from '../utils/annotation-canvas'
-import type { AnnotationPoint, AnnotationOperation } from '../types'
+import type { AnnotationPoint } from '../types'
 import { WS_CMD_ANNOTATION, ANNOTATION_DEFAULT_COLOR, ANNOTATION_DEFAULT_THICKNESS, WS_ANNOTATION_TYPE_CLEAR, WS_ANNOTATION_TYPE_STROKE } from '../cfg'
 import { uuidv7 } from '../../shared/util/uuid'
 
 interface UseAnnotationOptions {
   send: (data: unknown) => void
-  currentSlide: number
-  setOperationsBySlide: (update: React.SetStateAction<Record<string, AnnotationOperation[]>>) => void
   canvasRef: React.RefObject<HTMLCanvasElement | null>
 }
 
-export function useAnnotation({ send, currentSlide, setOperationsBySlide, canvasRef }: UseAnnotationOptions) {
+export function useAnnotation({ send, canvasRef }: UseAnnotationOptions) {
   const [drawMode, setDrawMode] = useState(false)
   const [annotationColor, setAnnotationColor] = useState(ANNOTATION_DEFAULT_COLOR)
   const [annotationThickness, setAnnotationThickness] = useState(ANNOTATION_DEFAULT_THICKNESS)
@@ -25,7 +23,7 @@ export function useAnnotation({ send, currentSlide, setOperationsBySlide, canvas
     const rect = canvas.getBoundingClientRect()
     setCurrentPoints([toPercent(e.clientX, e.clientY, rect)])
     canvas.setPointerCapture(e.pointerId)
-  }, [])
+  }, [canvasRef])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return
@@ -33,7 +31,7 @@ export function useAnnotation({ send, currentSlide, setOperationsBySlide, canvas
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     setCurrentPoints(prev => [...prev, toPercent(e.clientX, e.clientY, rect)])
-  }, [isDrawing])
+  }, [isDrawing, canvasRef])
 
   const handlePointerUp = useCallback(() => {
     if (!isDrawing) return
@@ -53,7 +51,7 @@ export function useAnnotation({ send, currentSlide, setOperationsBySlide, canvas
         payload: { points, color: annotationColor, thickness: annotationThickness },
       },
     })
-  }, [isDrawing, currentPoints, annotationColor, annotationThickness, currentSlide, setOperationsBySlide, send])
+  }, [isDrawing, currentPoints, annotationColor, annotationThickness, send])
 
   const handleClear = useCallback(() => {
     const id = uuidv7()

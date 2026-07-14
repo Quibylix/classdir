@@ -16,6 +16,8 @@ export function useSafeWebSocket<T>({ url, onMessage, schema }: UseWebSocketOpti
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const onMessageRef = useRef(onMessage)
   onMessageRef.current = onMessage
+  const schemaRef = useRef(schema)
+  schemaRef.current = schema
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return
@@ -32,7 +34,7 @@ export function useSafeWebSocket<T>({ url, onMessage, schema }: UseWebSocketOpti
     ws.onmessage = (e) => {
       try {
         const parsed = JSON.parse(e.data)
-        const result = schema.parse(parsed)
+        const result = schemaRef.current.parse(parsed)
         onMessageRef.current?.(result)
       } catch {
         // ignore malformed

@@ -1,19 +1,10 @@
-import { createContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../shared/api/client'
 import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from '../shared/cfg/routes'
 import { HTTP_METHOD_POST } from '../shared/cfg/http'
 import { LOGIN_RESULT } from './types'
 import type { LoginResult } from './types'
-
-export type AuthState = {
-  isAuthenticated: boolean
-  isLoading: boolean
-  checkAuth: () => Promise<void>
-  login: (password: string) => Promise<LoginResult>
-  logout: () => Promise<void>
-}
-
-export const AuthContext = createContext<AuthState | null>(null)
+import { AuthContext } from './auth-context'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)

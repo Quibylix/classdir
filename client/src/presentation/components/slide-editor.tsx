@@ -20,6 +20,8 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
   const lastIndexRef = useRef(currentIndex)
   const currentPropContent = slides[currentIndex]?.content ?? ''
   const lastPropContentRef = useRef(currentPropContent)
+  const contentRef = useRef(content)
+  contentRef.current = content
 
   useEffect(() => {
     let isMounted = true;
@@ -37,7 +39,7 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
       }
 
       const view = new EditorView({
-        doc: content,
+        doc: contentRef.current,
         extensions: [
           basicSetup,
           html(),

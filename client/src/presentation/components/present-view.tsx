@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useParams } from 'react-router'
 import { Box, Center, Container, Loader, Paper, Text } from '@mantine/core'
 import { useSlideShow } from '../hooks/use-slide-show'
@@ -10,22 +10,7 @@ export function PresentView() {
   const { cachedHtml, slideCount, currentSlide, loading, fetchError, iframeRef, canvasRef, operationsBySlide } =
     useSlideShow(code ? { command: WS_CMD_JOIN_ROOM, parameters: { room_code: code } } : null)
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const parent = canvas.parentElement
-    if (!parent) return
-
-    const observer = new ResizeObserver(() => {
-      canvas.width = parent.offsetWidth
-      canvas.height = parent.offsetHeight
-    })
-    observer.observe(parent)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
+  const triggerRedraw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -34,7 +19,32 @@ export function PresentView() {
     const ops = operationsBySlide[String(currentSlide)] ?? []
     const strokes = visibleStrokes(ops)
     drawStrokes(ctx, strokes, undefined, canvas.width, canvas.height)
-  }, [operationsBySlide, currentSlide])
+  }, [canvasRef, operationsBySlide, currentSlide])
+
+  useEffect(() => {
+    if (loading) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const parent = canvas.parentElement
+    if (!parent) return
+
+    const observer = new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = parent.offsetWidth * dpr
+      canvas.height = parent.offsetHeight * dpr
+
+      triggerRedraw()
+    })
+
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [loading, canvasRef, triggerRedraw])
+
+  useEffect(() => {
+    if (loading) return
+    triggerRedraw()
+  }, [loading, triggerRedraw])
 
   if (loading) {
     return <Center h="100vh" bg="dark.9"><Loader /></Center>
