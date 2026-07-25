@@ -1,1 +1,1 @@
-export const WS_RECONNECT_TIMEOUT_MS = 3000
+export const WS_RECONNECT_TIMEOUT_MS = 3000;

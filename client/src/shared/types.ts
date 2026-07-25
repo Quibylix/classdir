@@ -1,7 +1,7 @@
 export const WS_STATUS = {
-  Connecting: 'connecting',
-  Connected: 'connected',
-  Disconnected: 'disconnected',
-} as const
+  Connecting: "connecting",
+  Connected: "connected",
+  Disconnected: "disconnected",
+} as const;
 
-export type WSStatus = (typeof WS_STATUS)[keyof typeof WS_STATUS]
+export type WSStatus = (typeof WS_STATUS)[keyof typeof WS_STATUS];

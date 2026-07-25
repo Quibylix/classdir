@@ -1,20 +1,20 @@
-export const API_PREFIX = '/api/v1'
+export const API_PREFIX = "/api/v1";
 
-export const AUTH_LOGIN = `${API_PREFIX}/auth/login`
-export const AUTH_LOGOUT = `${API_PREFIX}/auth/logout`
-export const AUTH_CHECK = `${API_PREFIX}/auth/check`
+export const AUTH_LOGIN = `${API_PREFIX}/auth/login`;
+export const AUTH_LOGOUT = `${API_PREFIX}/auth/logout`;
+export const AUTH_CHECK = `${API_PREFIX}/auth/check`;
 
-export const ROOT = '/'
-export const CLIENT_LOGIN = '/login'
-export const CLIENT_CONFIGURE = '/configure'
-export const clientConfigure = (id: string) => `${CLIENT_CONFIGURE}/${id}`
+export const ROOT = "/";
+export const CLIENT_LOGIN = "/login";
+export const CLIENT_CONFIGURE = "/configure";
+export const clientConfigure = (id: string) => `${CLIENT_CONFIGURE}/${id}`;
 
-export const PRESENTATIONS = `${API_PREFIX}/presentation`
-export const presentationById = (id: string) => `${API_PREFIX}/presentation/${id}`
+export const PRESENTATIONS = `${API_PREFIX}/presentation`;
+export const presentationById = (id: string) => `${API_PREFIX}/presentation/${id}`;
 
-export const WS_V1 = '/ws/v1'
+export const WS_V1 = "/ws/v1";
 
-export const CLIENT_PRESENT = '/present'
-export const CLIENT_CONTROL = '/control'
-export const clientPresent = (code: string) => `${CLIENT_PRESENT}/${code}`
-export const clientControl = (id: string) => `${CLIENT_CONTROL}/${id}`
+export const CLIENT_PRESENT = "/present";
+export const CLIENT_CONTROL = "/control";
+export const clientPresent = (code: string) => `${CLIENT_PRESENT}/${code}`;
+export const clientControl = (id: string) => `${CLIENT_CONTROL}/${id}`;

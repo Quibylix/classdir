@@ -1,26 +1,28 @@
-import { useEffect, useState } from 'react'
-import { api } from '../shared/api/client'
-import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from '../shared/cfg/routes'
-import { HTTP_METHOD_POST } from '../shared/cfg/http'
-import { LOGIN_RESULT } from './types'
-import type { LoginResult } from './types'
-import { AuthContext } from './auth-context'
+import { useEffect, useState } from "react";
+import { api } from "../shared/api/client";
+import { AUTH_LOGIN, AUTH_LOGOUT, AUTH_CHECK } from "../shared/cfg/routes";
+import { HTTP_METHOD_POST } from "../shared/cfg/http";
+import { LOGIN_RESULT } from "./types";
+import type { LoginResult } from "./types";
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => { checkAuth() }, [])
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   async function checkAuth(): Promise<void> {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const res = await api(AUTH_CHECK)
-      setIsAuthenticated(res.ok)
+      const res = await api(AUTH_CHECK);
+      setIsAuthenticated(res.ok);
     } catch {
-      setIsAuthenticated(false)
+      setIsAuthenticated(false);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -29,25 +31,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api(AUTH_LOGIN, {
         method: HTTP_METHOD_POST,
         body: JSON.stringify({ password }),
-      })
+      });
       if (res.ok) {
-        setIsAuthenticated(true)
-        return LOGIN_RESULT.Ok
+        setIsAuthenticated(true);
+        return LOGIN_RESULT.Ok;
       }
-      return LOGIN_RESULT.Invalid
+      return LOGIN_RESULT.Invalid;
     } catch {
-      return LOGIN_RESULT.Error
+      return LOGIN_RESULT.Error;
     }
   }
 
   async function logout(): Promise<void> {
-    await api(AUTH_LOGOUT, { method: HTTP_METHOD_POST })
-    setIsAuthenticated(false)
+    await api(AUTH_LOGOUT, { method: HTTP_METHOD_POST });
+    setIsAuthenticated(false);
   }
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, isLoading, checkAuth, login, logout }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }

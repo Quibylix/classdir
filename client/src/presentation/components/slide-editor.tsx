@@ -1,48 +1,47 @@
-import { useRef, useEffect, useState, useCallback } from 'react'
-import type { EditorView } from 'codemirror'
-import { Box, Button, Group, Paper, Stack } from '@mantine/core'
-import { buildPreviewHtml } from '../utils/reveal-html'
+import { useRef, useEffect, useState, useCallback } from "react";
+import type { EditorView } from "codemirror";
+import { Box, Button, Group, Paper, Stack } from "@mantine/core";
+import { buildPreviewHtml } from "../utils/reveal-html";
 
 type SlideEditorProps = {
-  slides: string[]
-  currentIndex: number
-  onSave: (content: string) => void
-  isSaving: boolean
-}
+  slides: string[];
+  currentIndex: number;
+  onSave: (content: string) => void;
+  isSaving: boolean;
+};
 
 export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null)
-  const viewRef = useRef<EditorView | null>(null)
-  const previewRef = useRef<HTMLIFrameElement>(null)
-  const [content, setContent] = useState('')
+  const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
+  const previewRef = useRef<HTMLIFrameElement>(null);
+  const [content, setContent] = useState("");
 
-  const lastIndexRef = useRef(currentIndex)
-  const currentPropContent = slides[currentIndex] ?? ''
-  const lastPropContentRef = useRef(currentPropContent)
-  const contentRef = useRef(content)
-  contentRef.current = content
+  const lastIndexRef = useRef(currentIndex);
+  const currentPropContent = slides[currentIndex] ?? "";
+  const lastPropContentRef = useRef(currentPropContent);
+  const contentRef = useRef(content);
+  contentRef.current = content;
 
   const updateEditorContentIfNeeded = useCallback(() => {
-    const view = viewRef.current
-    if (!view) return
+    const view = viewRef.current;
+    if (!view) return;
 
-    const hasSlideChanged = currentIndex !== lastIndexRef.current
-    const hasPropContentChanged = currentPropContent !== lastPropContentRef.current
+    const hasSlideChanged = currentIndex !== lastIndexRef.current;
+    const hasPropContentChanged = currentPropContent !== lastPropContentRef.current;
 
     if (hasSlideChanged || hasPropContentChanged) {
-      lastIndexRef.current = currentIndex
-      lastPropContentRef.current = currentPropContent
+      lastIndexRef.current = currentIndex;
+      lastPropContentRef.current = currentPropContent;
 
-      setContent(currentPropContent)
+      setContent(currentPropContent);
 
       if (view.state.doc.toString() !== currentPropContent) {
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: currentPropContent },
-        })
+        });
       }
     }
-  }, [currentIndex, currentPropContent])
-
+  }, [currentIndex, currentPropContent]);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,13 +49,13 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
     async function loadCodeMirror() {
       if (!editorRef.current) return;
 
-      const { EditorView, basicSetup } = await import('codemirror');
-      const { html } = await import('@codemirror/lang-html');
+      const { EditorView, basicSetup } = await import("codemirror");
+      const { html } = await import("@codemirror/lang-html");
 
       if (!isMounted) return;
 
       if (editorRef.current) {
-        editorRef.current.innerHTML = '';
+        editorRef.current.innerHTML = "";
       }
 
       const view = new EditorView({
@@ -88,15 +87,15 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
   }, [updateEditorContentIfNeeded]);
 
   useEffect(() => {
-    updateEditorContentIfNeeded()
-  }, [updateEditorContentIfNeeded])
+    updateEditorContentIfNeeded();
+  }, [updateEditorContentIfNeeded]);
 
   const handleSave = useCallback(() => {
-    const updatedSlides = slides.map((s, i) => i === currentIndex ? content : s)
-    onSave(updatedSlides.join('\n---\n'))
-  }, [onSave, slides, currentIndex, content])
+    const updatedSlides = slides.map((s, i) => (i === currentIndex ? content : s));
+    onSave(updatedSlides.map((slide) => slide.trim()).join("\n---\n"));
+  }, [onSave, slides, currentIndex, content]);
 
-  const previewHtml = buildPreviewHtml(slides, currentIndex)
+  const previewHtml = buildPreviewHtml(slides, currentIndex);
 
   return (
     <Stack h="100%">
@@ -108,16 +107,21 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
         </Group>
       </Group>
       <Group align="stretch" h="100%" gap="md">
-        <Paper ref={editorRef} flex={1} withBorder mih={400} style={{ overflow: 'auto' }} />
+        <Paper ref={editorRef} flex={1} withBorder mih={400} style={{ overflow: "auto" }} />
         <Box flex={1} mih={400}>
           <iframe
             ref={previewRef}
             srcDoc={previewHtml}
             title="Slide Preview"
-            style={{ width: '100%', height: '100%', border: '1px solid var(--mantine-color-default-border)', borderRadius: 'var(--mantine-radius-md)' }}
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "1px solid var(--mantine-color-default-border)",
+              borderRadius: "var(--mantine-radius-md)",
+            }}
           />
         </Box>
       </Group>
     </Stack>
-  )
+  );
 }

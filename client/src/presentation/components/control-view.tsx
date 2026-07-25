@@ -1,73 +1,123 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router'
+import { useCallback, useEffect, useState } from "react";
+import { useParams, Link } from "react-router";
 import {
-  Box, Button, Center, Code, Group, Loader, NumberInput, Slider, Stack, Text, ActionIcon, Paper, Container, Modal,
-} from '@mantine/core'
-import { PencilIcon } from '@phosphor-icons/react/dist/csr/Pencil'
-import { EyeIcon } from '@phosphor-icons/react/dist/csr/Eye'
-import { CodeSimpleIcon } from '@phosphor-icons/react/dist/csr/CodeSimple'
-import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
-import { useSlideShow } from '../hooks/use-slide-show'
-import { useAnnotation } from '../hooks/use-annotation'
-import { useSlideGestures } from '../hooks/use-slide-gestures'
-import { useWakeLock } from '../../shared/hooks/use-wake-lock'
-import { DraggableFab } from './draggable-fab'
-import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
-import { WS_CMD_INIT_PRESENTATION, ANNOTATION_COLORS, ANNOTATION_MIN_THICKNESS, ANNOTATION_MAX_THICKNESS } from '../cfg'
-import { visibleStrokes, drawStrokes } from '../utils/annotation-canvas'
+  Box,
+  Button,
+  Center,
+  Code,
+  Group,
+  Loader,
+  NumberInput,
+  Slider,
+  Stack,
+  Text,
+  ActionIcon,
+  Paper,
+  Container,
+  Modal,
+} from "@mantine/core";
+import { PencilIcon } from "@phosphor-icons/react/dist/csr/Pencil";
+import { EyeIcon } from "@phosphor-icons/react/dist/csr/Eye";
+import { CodeSimpleIcon } from "@phosphor-icons/react/dist/csr/CodeSimple";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { useSlideShow } from "../hooks/use-slide-show";
+import { useAnnotation } from "../hooks/use-annotation";
+import { useSlideGestures } from "../hooks/use-slide-gestures";
+import { useWakeLock } from "../../shared/hooks/use-wake-lock";
+import { DraggableFab } from "./draggable-fab";
+import { CLIENT_CONFIGURE } from "../../shared/cfg/routes";
+import {
+  WS_CMD_INIT_PRESENTATION,
+  ANNOTATION_COLORS,
+  ANNOTATION_MIN_THICKNESS,
+  ANNOTATION_MAX_THICKNESS,
+} from "../cfg";
+import { visibleStrokes, drawStrokes } from "../utils/annotation-canvas";
 
 export function ControlView() {
-  useWakeLock()
-  const { id } = useParams<{ id: string }>()
-  const { send, cachedHtml, slideCount, currentSlide, loading, fetchError, roomCode, iframeRef, canvasRef, operationsBySlide } =
-    useSlideShow(id ? { command: WS_CMD_INIT_PRESENTATION, parameters: { presentation_id: id } } : null)
-  const { drawMode, setDrawMode, annotationColor, setAnnotationColor, annotationThickness, setAnnotationThickness, currentPoints, handlePointerDown, handlePointerMove, handlePointerUp, handleClear } =
-    useAnnotation({ send, canvasRef })
-  const { goToValue, setGoToValue, goToModalOpen, setGoToModalOpen, handleZoneClick, handleGoToSubmit } =
-    useSlideGestures({ send, slideCount, currentSlide })
+  useWakeLock();
+  const { id } = useParams<{ id: string }>();
+  const {
+    send,
+    cachedHtml,
+    slideCount,
+    currentSlide,
+    loading,
+    fetchError,
+    roomCode,
+    iframeRef,
+    canvasRef,
+    operationsBySlide,
+  } = useSlideShow(
+    id ? { command: WS_CMD_INIT_PRESENTATION, parameters: { presentation_id: id } } : null,
+  );
+  const {
+    drawMode,
+    setDrawMode,
+    annotationColor,
+    setAnnotationColor,
+    annotationThickness,
+    setAnnotationThickness,
+    currentPoints,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleClear,
+  } = useAnnotation({ send, canvasRef });
+  const {
+    goToValue,
+    setGoToValue,
+    goToModalOpen,
+    setGoToModalOpen,
+    handleZoneClick,
+    handleGoToSubmit,
+  } = useSlideGestures({ send, slideCount, currentSlide });
 
-  const [drawMenuOpen, setDrawMenuOpen] = useState(false)
-  const [showRoomCode, setShowRoomCode] = useState(false)
-
+  const [drawMenuOpen, setDrawMenuOpen] = useState(false);
+  const [showRoomCode, setShowRoomCode] = useState(false);
 
   const triggerRedraw = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const ops = operationsBySlide[String(currentSlide)] ?? []
-    const strokes = visibleStrokes(ops)
-    drawStrokes(ctx, strokes, currentPoints, canvas.width, canvas.height)
-  }, [canvasRef, operationsBySlide, currentPoints, currentSlide])
+    const ops = operationsBySlide[String(currentSlide)] ?? [];
+    const strokes = visibleStrokes(ops);
+    drawStrokes(ctx, strokes, currentPoints, canvas.width, canvas.height);
+  }, [canvasRef, operationsBySlide, currentPoints, currentSlide]);
 
   useEffect(() => {
-    if (loading) return
+    if (loading) return;
 
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const parent = canvas.parentElement
-    if (!parent) return
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
 
     const observer = new ResizeObserver(() => {
-      const dpr = window.devicePixelRatio || 1
-      canvas.width = parent.offsetWidth * dpr
-      canvas.height = parent.offsetHeight * dpr
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = parent.offsetWidth * dpr;
+      canvas.height = parent.offsetHeight * dpr;
 
-      triggerRedraw()
-    })
+      triggerRedraw();
+    });
 
-    observer.observe(parent)
-    return () => observer.disconnect()
-  }, [loading, canvasRef, triggerRedraw])
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [loading, canvasRef, triggerRedraw]);
 
   useEffect(() => {
-    if (loading) return
-    triggerRedraw()
-  }, [loading, triggerRedraw])
+    if (loading) return;
+    triggerRedraw();
+  }, [loading, triggerRedraw]);
 
   if (loading) {
-    return <Center h="100vh" bg="dark.9"><Loader /></Center>
+    return (
+      <Center h="100vh" bg="dark.9">
+        <Loader />
+      </Center>
+    );
   }
 
   if (fetchError) {
@@ -75,10 +125,12 @@ export function ControlView() {
       <Center h="100vh" bg="dark.9">
         <Stack align="center">
           <Text c="red">{fetchError}</Text>
-          <Button component={Link} to={CLIENT_CONFIGURE}>Back</Button>
+          <Button component={Link} to={CLIENT_CONFIGURE}>
+            Back
+          </Button>
         </Stack>
       </Center>
-    )
+    );
   }
 
   if (slideCount === 0) {
@@ -86,51 +138,52 @@ export function ControlView() {
       <Center h="100vh" bg="dark.9">
         <Stack align="center">
           <Text c="dimmed">No slides in this presentation</Text>
-          <Button component={Link} to={CLIENT_CONFIGURE}>Back</Button>
+          <Button component={Link} to={CLIENT_CONFIGURE}>
+            Back
+          </Button>
         </Stack>
       </Center>
-    )
+    );
   }
 
   return (
     <Container fluid m={0} p={0} h="100vh" bg="dark.9" pos="relative">
-      <Box m="auto" inset={0} mah="100%" maw="100%" pos="absolute" bg="#000" style={{ aspectRatio: '48/35' }}>
+      <Box
+        m="auto"
+        inset={0}
+        mah="100%"
+        maw="100%"
+        pos="absolute"
+        bg="#000"
+        style={{ aspectRatio: "48/35" }}
+      >
         <iframe
           ref={iframeRef}
           srcDoc={cachedHtml}
           title="Presentation"
-          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          style={{ width: "100%", height: "100%", border: "none", display: "block" }}
         />
         <canvas
           ref={canvasRef}
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: drawMode ? 'auto' : 'none',
-            cursor: drawMode ? 'crosshair' : 'default',
-            touchAction: drawMode ? 'none' : 'auto',
+            width: "100%",
+            height: "100%",
+            pointerEvents: drawMode ? "auto" : "none",
+            cursor: drawMode ? "crosshair" : "default",
+            touchAction: drawMode ? "none" : "auto",
           }}
           onPointerDown={drawMode ? handlePointerDown : undefined}
           onPointerMove={drawMode ? handlePointerMove : undefined}
           onPointerUp={drawMode ? handlePointerUp : undefined}
         />
         {!drawMode && (
-          <Box pos="absolute" inset={0} style={{ display: 'flex', cursor: 'pointer' }}>
-            <Box
-              flex="0 0 35%"
-              onClick={() => handleZoneClick('prev')}
-            />
-            <Box
-              flex="0 0 30%"
-              onClick={() => handleZoneClick('goto')}
-            />
-            <Box
-              flex="0 0 35%"
-              onClick={() => handleZoneClick('next')}
-            />
+          <Box pos="absolute" inset={0} style={{ display: "flex", cursor: "pointer" }}>
+            <Box flex="0 0 35%" onClick={() => handleZoneClick("prev")} />
+            <Box flex="0 0 30%" onClick={() => handleZoneClick("goto")} />
+            <Box flex="0 0 35%" onClick={() => handleZoneClick("next")} />
           </Box>
         )}
       </Box>
@@ -150,17 +203,25 @@ export function ControlView() {
       </Paper>
 
       {drawMode && drawMenuOpen && (
-        <Paper pos="fixed" top={80} right={24} p="sm" withBorder bg="dark.8" style={{ zIndex: 1001 }}>
+        <Paper
+          pos="fixed"
+          top={80}
+          right={24}
+          p="sm"
+          withBorder
+          bg="dark.8"
+          style={{ zIndex: 1001 }}
+        >
           <Stack gap="xs">
             <Group gap={4}>
-              {ANNOTATION_COLORS.map(c => (
+              {ANNOTATION_COLORS.map((c) => (
                 <ActionIcon
                   key={c}
                   size="sm"
                   style={{
                     backgroundColor: c,
-                    border: c === annotationColor ? '2px solid white' : '2px solid transparent',
-                    borderRadius: '50%',
+                    border: c === annotationColor ? "2px solid white" : "2px solid transparent",
+                    borderRadius: "50%",
                   }}
                   onClick={() => setAnnotationColor(c)}
                 />
@@ -177,7 +238,15 @@ export function ControlView() {
               <ActionIcon variant="outline" color="gray" onClick={handleClear}>
                 <TrashIcon size={16} />
               </ActionIcon>
-              <Button size="xs" variant="subtle" color="gray" onClick={() => { setDrawMode(false); setDrawMenuOpen(false) }}>
+              <Button
+                size="xs"
+                variant="subtle"
+                color="gray"
+                onClick={() => {
+                  setDrawMode(false);
+                  setDrawMenuOpen(false);
+                }}
+              >
                 Exit draw
               </Button>
             </Group>
@@ -187,15 +256,15 @@ export function ControlView() {
 
       <DraggableFab
         icon={drawMode ? <EyeIcon size={20} /> : <PencilIcon size={20} />}
-        onClick={() => drawMode ? setDrawMenuOpen(v => !v) : setDrawMode(true)}
-        label={drawMode ? 'Open draw menu' : 'Enter draw mode'}
+        onClick={() => (drawMode ? setDrawMenuOpen((v) => !v) : setDrawMode(true))}
+        label={drawMode ? "Open draw menu" : "Enter draw mode"}
         initialTop={24}
         initialRight={24}
       />
 
       <DraggableFab
         icon={<CodeSimpleIcon size={20} />}
-        onClick={() => setShowRoomCode(v => !v)}
+        onClick={() => setShowRoomCode((v) => !v)}
         label="Toggle room code"
         initialTop={80}
         initialRight={24}
@@ -227,5 +296,5 @@ export function ControlView() {
         </Button>
       </Modal>
     </Container>
-  )
+  );
 }

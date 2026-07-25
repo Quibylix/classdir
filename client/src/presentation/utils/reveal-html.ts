@@ -1,7 +1,7 @@
-import { CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS, POST_MSG_TYPE } from '../cfg'
+import { CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS, POST_MSG_TYPE } from "../cfg";
 
 export function buildPresentHtml(slides: string[], initialSlide: number): string {
-  const slidesHtml = slides.map(content => `<section>${content}</section>`).join('\n')
+  const slidesHtml = slides.map((content) => `<section>${content}</section>`).join("\n");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,11 +27,11 @@ export function buildPresentHtml(slides: string[], initialSlide: number): string
     });
   </script>
 </body>
-</html>`
+</html>`;
 }
 
 export function buildPreviewHtml(slides: string[], targetIndex: number): string {
-  const slidesHtml = slides.map((content) => `<section>${content}</section>`).join('\n')
+  const slidesHtml = slides.map((content) => `<section>${content}</section>`).join("\n");
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -53,5 +53,5 @@ ${slidesHtml}
     });
   </script>
 </body>
-</html>`
+</html>`;
 }

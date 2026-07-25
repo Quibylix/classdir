@@ -1,11 +1,11 @@
-import { Center, Loader } from '@mantine/core'
-import { useNavigate } from 'react-router'
-import { useAuth } from '../hooks/use-auth'
-import { CLIENT_LOGIN } from '../../shared/cfg/routes'
-import { useEffect } from 'react';
+import { Center, Loader } from "@mantine/core";
+import { useNavigate } from "react-router";
+import { useAuth } from "../hooks/use-auth";
+import { CLIENT_LOGIN } from "../../shared/cfg/routes";
+import { useEffect } from "react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,7 +14,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  if (isLoading) return <Center h="100vh"><Loader /></Center>
+  if (isLoading)
+    return (
+      <Center h="100vh">
+        <Loader />
+      </Center>
+    );
 
   return isAuthenticated ? children : null;
 }
