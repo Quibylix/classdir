@@ -46,7 +46,7 @@ ${slidesHtml}
   </div>
   <script src="${CDN_REVEAL_JS}"></script>
   <script>
-    Reveal.initialize({transition: 'none', progress: false}).then(() => {
+    Reveal.initialize({ transition: 'slide', progress: false, controls: false, touch: false, scrollActivationWidth: null, }).then(() => {
       Reveal.slide(${targetIndex});
       Reveal.configure({ transition: 'slide'})
       document.getElementById('reveal').style.opacity = '1';
