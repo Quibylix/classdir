@@ -20,13 +20,13 @@ Unless otherwise specified, all commands are sent as JSON objects through a WebS
 - [x] **init_presentation**: Initializes a new presentation session.
   - Parameters:
     - `presentation_id`: A unique identifier for the presentation room.
-  - Response: `{ "data": { "presentation_id": <presentation_id>, "slides": [<slide_object>], "current_index": <slide_number>, "room_code": "<8-digit-code>" } }`
+  - Response: `{ "data": { "presentation_id": <presentation_id>, "slides": ["<slide_content>", ...], "current_index": <slide_number>, "room_code": "<8-digit-code>" } }`
   - Broadcast: None.
 
 - [x] **join_room**: Subscribes to a presentation room to receive broadcast events.
   - Parameters:
     - `room_code`: An 8-digit room code to join.
-  - Response: `{ "data": { "presentation_id": <presentation_id>, "slides": [<slide_object>], "current_index": <slide_number> } }`
+  - Response: `{ "data": { "presentation_id": <presentation_id>, "slides": ["<slide_content>", ...], "current_index": <slide_number> } }`
   - Broadcast: None (the server starts forwarding existing broadcasts to this connection).
 
 ## Slide Control Commands

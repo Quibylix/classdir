@@ -17,10 +17,10 @@ type JoinParams struct {
 }
 
 type presentationStatus struct {
-	PresentationID string               `json:"presentation_id"`
-	Slides         []presentation.Slide `json:"slides"`
-	CurrentIndex   int                  `json:"current_index"`
-	RoomCode       string               `json:"room_code,omitempty"`
+	PresentationID string   `json:"presentation_id"`
+	Slides         []string `json:"slides"`
+	CurrentIndex   int      `json:"current_index"`
+	RoomCode       string   `json:"room_code,omitempty"`
 }
 
 type InitHandler struct{}

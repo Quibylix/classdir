@@ -16,20 +16,17 @@ export function PresentationDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  const { presentation, isLoading, isSaving, error, updateTitle } = usePresentation(id ?? "")
+  const { presentation, isLoading, isSaving, error, saveContent } = usePresentation(id ?? "")
   const {
-    slides, currentIndex,
-    isAdding, isSaving: isSlideSaving, isDeleting: isSlideDeleting,
-    error: slidesError,
-    addSlide, saveSlide, removeSlide, goToSlide,
-  } = useSlides(id ?? "", presentation?.slides)
-
-  const currentSlide = slides[currentIndex];
+    slides, addSlide, removeSlide, joinSlides,
+  } = useSlides(presentation?.content ?? '')
 
   const [editTitle, setEditTitle] = useState('')
   const [editing, setEditing] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const [currentIndex, setCurrentIndex] = useState(0)
 
   if (isLoading) {
     return (
@@ -69,7 +66,7 @@ export function PresentationDetailPage() {
 
   function handleSaveTitle() {
     if (!editTitle.trim()) return
-    updateTitle(editTitle.trim())?.finally(() => setEditing(false))
+    saveContent(editTitle.trim(), joinSlides())?.finally(() => setEditing(false))
   }
 
   function handleDeleteConfirm() {
@@ -79,6 +76,24 @@ export function PresentationDetailPage() {
       () => navigate('/configure'),
       () => { setIsDeleting(false); setDeleteModalOpen(false) },
     )
+  }
+
+  function handleSaveSlideContent(content: string) {
+    if (!presentation) return
+    saveContent(presentation.title, content)
+  }
+
+  function handleAddSlide() {
+    addSlide()
+    setCurrentIndex(slides.length)
+  }
+
+  function handleRemoveSlide() {
+    if (currentIndex >= slides.length) return
+    removeSlide(currentIndex)
+    if (currentIndex >= slides.length - 1) {
+      setCurrentIndex(Math.max(0, slides.length - 2))
+    }
   }
 
   if (!presentation) return null
@@ -126,17 +141,13 @@ export function PresentationDetailPage() {
         </Group>
       )}
 
-      {slidesError && (
-        <Text c="red" size="sm">{slidesError.message}</Text>
-      )}
-
       <Group justify="space-between">
         <Group>
           <Button
             variant="outline"
             color="gray"
             size="sm"
-            onClick={() => goToSlide(currentIndex - 1)}
+            onClick={() => setCurrentIndex(currentIndex - 1)}
             disabled={currentIndex <= 0}
             px="xs"
             style={{ borderColor: 'var(--mantine-color-dark-6)' }}
@@ -150,7 +161,7 @@ export function PresentationDetailPage() {
             variant="outline"
             color="gray"
             size="sm"
-            onClick={() => goToSlide(currentIndex + 1)}
+            onClick={() => setCurrentIndex(currentIndex + 1)}
             disabled={currentIndex >= slides.length - 1}
             px="xs"
             style={{ borderColor: 'var(--mantine-color-dark-6)' }}
@@ -161,9 +172,7 @@ export function PresentationDetailPage() {
         <Group>
           <Button
             leftSection={<PlusIcon size={16} />}
-            onClick={addSlide}
-            loading={isAdding}
-            disabled={isAdding}
+            onClick={handleAddSlide}
           >
             Add Slide
           </Button>
@@ -171,9 +180,8 @@ export function PresentationDetailPage() {
             leftSection={<TrashIcon size={16} />}
             color="red"
             variant="outline"
-            onClick={() => removeSlide(currentIndex)}
-            loading={isSlideDeleting}
-            disabled={!currentSlide || isSlideDeleting}
+            onClick={handleRemoveSlide}
+            disabled={slides.length === 0}
           >
             Delete Slide
           </Button>
@@ -181,18 +189,18 @@ export function PresentationDetailPage() {
       </Group>
 
       <Box style={{ flex: 1, minHeight: 0 }}>
-        {currentSlide ? (
+        {slides.length > 0 ? (
           <SlideEditor
             slides={slides}
             currentIndex={currentIndex}
-            onSave={saveSlide}
-            isSaving={isSlideSaving}
+            onSave={handleSaveSlideContent}
+            isSaving={isSaving}
           />
         ) : (
           <Center h="100%">
             <Stack align="center" gap="md">
               <Text c="dimmed">No slides yet</Text>
-              <Button onClick={addSlide} loading={isAdding} disabled={isAdding}>
+              <Button onClick={handleAddSlide}>
                 Add your first slide
               </Button>
             </Stack>

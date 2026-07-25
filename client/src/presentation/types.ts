@@ -1,17 +1,10 @@
 import { z } from 'zod'
 import { WS_EVENT_SLIDE_CHANGED, WS_EVENT_ANNOTATION_ADDED, WS_EVENT_ANNOTATIONS_BATCH, WS_ANNOTATION_TYPE_CLEAR, WS_ANNOTATION_TYPE_STROKE } from './cfg'
 
-export const SlideSchema = z.object({
-  id: z.string(),
-  content: z.string(),
-})
-export type Slide = z.infer<typeof SlideSchema>
-
 export const PresentationSchema = z.object({
   id: z.string(),
   title: z.string(),
-  slide_order: z.array(z.string()),
-  slides: z.array(SlideSchema),
+  content: z.string(),
 })
 export type Presentation = z.infer<typeof PresentationSchema>
 
@@ -59,7 +52,7 @@ export const WSOutputMessageSchema = z.object({
   }),
 })).or(z.object({
   data: z.object({
-    slides: z.array(SlideSchema),
+    slides: z.array(z.string()),
     current_index: z.number(),
     room_code: z.string().optional(),
   })

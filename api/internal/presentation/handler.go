@@ -8,19 +8,14 @@ import (
 
 	"classdir/api/internal/shared/cfg"
 	"classdir/api/internal/shared/response"
+	"classdir/api/internal/shared/sanitize"
 	"classdir/api/internal/shared/validate"
 )
 
-type Slide struct {
-	ID      string `json:"id"`
-	Content string `json:"content"`
-}
-
 type Presentation struct {
-	ID         string  `json:"id"`
-	Title      string  `json:"title"`
-	SlideOrder []string `json:"slide_order"`
-	Slides     []Slide `json:"slides"`
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
 type PresentationPreview struct {
@@ -34,12 +29,6 @@ func RegisterRoutes(mux *http.ServeMux, store Store) {
 	mux.HandleFunc("GET /api/v1/presentation/{"+pathKeyPresentationID+"}", getPresentationHandler(store))
 	mux.HandleFunc("PUT /api/v1/presentation/{"+pathKeyPresentationID+"}", updatePresentationHandler(store))
 	mux.HandleFunc("DELETE /api/v1/presentation/{"+pathKeyPresentationID+"}", deletePresentationHandler(store))
-
-	prefix := "/api/v1/presentation/{" + pathKeyPresentationID + "}/slides"
-	mux.HandleFunc("POST "+prefix, createSlideHandler(store))
-	mux.HandleFunc("GET "+prefix+"/{"+pathKeySlideID+"}", getSlideHandler(store))
-	mux.HandleFunc("PUT "+prefix+"/{"+pathKeySlideID+"}", updateSlideHandler(store))
-	mux.HandleFunc("DELETE "+prefix+"/{"+pathKeySlideID+"}", deleteSlideHandler(store))
 }
 
 func createPresentationHandler(store Store) http.HandlerFunc {
@@ -73,10 +62,9 @@ func createPresentationHandler(store Store) http.HandlerFunc {
 		}
 
 		data, err := json.Marshal(Presentation{
-			ID:         body.ID,
-			Title:      body.Title,
-			SlideOrder: []string{},
-			Slides:     []Slide{},
+			ID:      body.ID,
+			Title:   body.Title,
+			Content: "",
 		})
 		if err != nil {
 			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgCreatePresentation)
@@ -124,8 +112,8 @@ func updatePresentationHandler(store Store) http.HandlerFunc {
 		}
 
 		var body struct {
-			Title      string   `json:"title"`
-			SlideOrder []string `json:"slide_order,omitempty"`
+			Title   string `json:"title"`
+			Content string `json:"content"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidJSON, cfg.ErrMsgInvalidJSON)
@@ -137,22 +125,11 @@ func updatePresentationHandler(store Store) http.HandlerFunc {
 			return
 		}
 
-		if body.SlideOrder != nil {
-			for _, sid := range body.SlideOrder {
-				if !validate.IsValidUUIDv7(sid) {
-					response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidID)
-					return
-				}
-			}
-		}
+		sanitized := sanitize.RevealPolicy.Sanitize(body.Content)
 
-		if err := store.Update(r.Context(), id, body.Title, body.SlideOrder); err != nil {
+		if err := store.Update(r.Context(), id, body.Title, sanitized); err != nil {
 			if errors.Is(err, ErrNotFound) {
 				response.WriteError(w, http.StatusNotFound, cfg.ErrNotFound, cfg.ErrMsgNotFound)
-				return
-			}
-			if errors.Is(err, ErrInvalidSlideOrder) {
-				response.WriteError(w, http.StatusBadRequest, cfg.ErrInvalidUUID, cfg.ErrMsgInvalidSlideOrder)
 				return
 			}
 			response.WriteError(w, http.StatusInternalServerError, cfg.ErrInternalError, cfg.ErrMsgUpdatePresentation)

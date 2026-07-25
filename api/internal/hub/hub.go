@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"regexp"
 	"sync"
 
 	"classdir/api/internal/presentation"
@@ -60,7 +61,8 @@ func (h *Hub) GetOrCreateRoom(id string) (*Room, error) {
 		return existingRoom, nil
 	}
 
-	room := NewRoom(id, h.generateCodeLocked(), h, pres.Slides)
+	slides := regexp.MustCompile(`\n---+\s*\n`).Split(pres.Content, -1)
+	room := NewRoom(id, h.generateCodeLocked(), h, slides)
 	h.rooms[id] = room
 	h.roomsByCode[room.Code] = room
 	go room.Run()

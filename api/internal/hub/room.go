@@ -3,8 +3,6 @@ package hub
 import (
 	"encoding/json"
 	"time"
-
-	"classdir/api/internal/presentation"
 )
 
 type roomCommand struct {
@@ -28,14 +26,14 @@ type Room struct {
 	done              chan struct{}
 	commands          chan roomCommand
 	currentIndex      int
-	slides            []presentation.Slide
+	slides            []string
 	hub               *Hub
 	operationsBySlide map[int][]AnnotationOperation
 }
 
 const roomDeleteTimeout = 1 * time.Minute
 
-func NewRoom(id, code string, hub *Hub, slides []presentation.Slide) *Room {
+func NewRoom(id, code string, hub *Hub, slides []string) *Room {
 	return &Room{
 		ID:                id,
 		Code:              code,

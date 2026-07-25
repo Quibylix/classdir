@@ -1,91 +1,39 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createSlide, updateSlide, deleteSlide } from '../api'
-import { uuidv7 } from '../../shared/util/uuid'
 import { DEFAULT_SLIDE_CONTENT } from '../cfg'
-import type { Slide } from '../types'
-import type { FetchError } from '../../shared/api/fetch'
 
-export function useSlides(presId: string, initialSlides?: Slide[]) {
-  const [slides, setSlides] = useState<Slide[]>(initialSlides ?? [])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isAdding, setIsAdding] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [error, setError] = useState<FetchError | null>(null)
+export function useSlides(initialContent: string) {
+  const [slides, setSlides] = useState<string[]>(splitContent(initialContent))
 
   useEffect(() => {
-    setSlides(initialSlides ?? [])
-  }, [initialSlides])
-
-  useEffect(() => {
-    if (currentIndex >= slides.length) {
-      setCurrentIndex(Math.max(0, slides.length - 1))
-    }
-  }, [slides, currentIndex])
+    setSlides(splitContent(initialContent))
+  }, [initialContent])
 
   const addSlide = useCallback(() => {
-    setIsAdding(true)
-    setError(null)
-
-    const id = uuidv7()
-
-    createSlide(presId, id, DEFAULT_SLIDE_CONTENT)
-      .match(
-        (slide) => {
-          setSlides(prev => [...prev, slide])
-          setCurrentIndex(slides.length)
-        },
-        (e) => setError(e),
-      )
-      .finally(() => setIsAdding(false))
-  }, [presId, slides.length])
-
-  const saveSlide = useCallback((index: number, content: string) => {
-    const slide = slides[index]
-    if (!slide) return
-
-    setIsSaving(true)
-    setError(null)
-
-    updateSlide(presId, slide.id, content)
-      .match(
-        (updated) => setSlides(prev => prev.map((s, i) => i === index ? updated : s)),
-        (e) => setError(e),
-      )
-      .finally(() => setIsSaving(false))
-  }, [presId, slides])
+    setSlides(prev => [...prev, DEFAULT_SLIDE_CONTENT])
+  }, [])
 
   const removeSlide = useCallback((index: number) => {
-    const slide = slides[index]
-    if (!slide) return
+    setSlides(prev => prev.filter((_, i) => i !== index))
+  }, [])
 
-    setIsDeleting(true)
-    setError(null)
+  const updateSlideContent = useCallback((index: number, content: string) => {
+    setSlides(prev => prev.map((s, i) => i === index ? content : s))
+  }, [])
 
-    deleteSlide(presId, slide.id)
-      .match(
-        () => setSlides(prev => prev.filter((_, i) => i !== index)),
-        (e) => setError(e),
-      )
-      .finally(() => setIsDeleting(false))
-  }, [presId, slides])
-
-  const goToSlide = useCallback((index: number) => {
-    if (index >= 0 && index < slides.length) {
-      setCurrentIndex(index)
-    }
-  }, [slides.length])
+  const joinSlides = useCallback(() => {
+    return slides.join('\n---\n')
+  }, [slides])
 
   return {
     slides,
-    currentIndex,
-    isAdding,
-    isSaving,
-    isDeleting,
-    error,
     addSlide,
-    saveSlide,
     removeSlide,
-    goToSlide,
+    updateSlideContent,
+    joinSlides,
   }
+}
+
+function splitContent(content: string): string[] {
+  if (!content) return ['']
+  return content.split(/\n---+\s*\n/)
 }

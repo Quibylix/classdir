@@ -2,12 +2,11 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import type { EditorView } from 'codemirror'
 import { Box, Button, Group, Paper, Stack } from '@mantine/core'
 import { buildPreviewHtml } from '../utils/reveal-html'
-import type { Slide } from '../types'
 
 type SlideEditorProps = {
-  slides: Slide[]
+  slides: string[]
   currentIndex: number
-  onSave: (index: number, content: string) => void
+  onSave: (content: string) => void
   isSaving: boolean
 }
 
@@ -15,13 +14,35 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const previewRef = useRef<HTMLIFrameElement>(null)
-  const [content, setContent] = useState(() => slides[currentIndex]?.content ?? '')
+  const [content, setContent] = useState('')
 
   const lastIndexRef = useRef(currentIndex)
-  const currentPropContent = slides[currentIndex]?.content ?? ''
+  const currentPropContent = slides[currentIndex] ?? ''
   const lastPropContentRef = useRef(currentPropContent)
   const contentRef = useRef(content)
   contentRef.current = content
+
+  const updateEditorContentIfNeeded = useCallback(() => {
+    const view = viewRef.current
+    if (!view) return
+
+    const hasSlideChanged = currentIndex !== lastIndexRef.current
+    const hasPropContentChanged = currentPropContent !== lastPropContentRef.current
+
+    if (hasSlideChanged || hasPropContentChanged) {
+      lastIndexRef.current = currentIndex
+      lastPropContentRef.current = currentPropContent
+
+      setContent(currentPropContent)
+
+      if (view.state.doc.toString() !== currentPropContent) {
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: currentPropContent },
+        })
+      }
+    }
+  }, [currentIndex, currentPropContent])
+
 
   useEffect(() => {
     let isMounted = true;
@@ -54,6 +75,7 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
       });
 
       viewRef.current = view;
+      updateEditorContentIfNeeded();
     }
 
     loadCodeMirror();
@@ -63,32 +85,16 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
       viewRef.current?.destroy();
       viewRef.current = null;
     };
-  }, []);
+  }, [updateEditorContentIfNeeded]);
 
   useEffect(() => {
-    const view = viewRef.current
-    if (!view) return
-
-    const hasSlideChanged = currentIndex !== lastIndexRef.current
-    const hasPropContentChanged = currentPropContent !== lastPropContentRef.current
-
-    if (hasSlideChanged || hasPropContentChanged) {
-      lastIndexRef.current = currentIndex
-      lastPropContentRef.current = currentPropContent
-
-      setContent(currentPropContent)
-
-      if (view.state.doc.toString() !== currentPropContent) {
-        view.dispatch({
-          changes: { from: 0, to: view.state.doc.length, insert: currentPropContent },
-        })
-      }
-    }
-  }, [currentIndex, currentPropContent])
+    updateEditorContentIfNeeded()
+  }, [updateEditorContentIfNeeded])
 
   const handleSave = useCallback(() => {
-    onSave(currentIndex, content)
-  }, [onSave, currentIndex, content])
+    const updatedSlides = slides.map((s, i) => i === currentIndex ? content : s)
+    onSave(updatedSlides.join('\n---\n'))
+  }, [onSave, slides, currentIndex, content])
 
   const previewHtml = buildPreviewHtml(slides, currentIndex)
 

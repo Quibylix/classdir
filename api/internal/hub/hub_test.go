@@ -125,11 +125,11 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func testSlides() []presentation.Slide {
-	return []presentation.Slide{
-		{ID: "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b70", Content: "# Slide 1"},
-		{ID: "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b71", Content: "# Slide 2"},
-		{ID: "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b72", Content: "# Slide 3"},
+func testSlides() []string {
+	return []string{
+		"<h1>Slide 1</h1>",
+		"<h1>Slide 2</h1>",
+		"<h1>Slide 3</h1>",
 	}
 }
 
@@ -137,9 +137,9 @@ func newTestHub() *Hub {
 	return NewHub(&mockStore{
 		getByIDFunc: func(ctx context.Context, id string) (*presentation.Presentation, error) {
 			return &presentation.Presentation{
-				ID:     validUUID(),
-				Title:  "Test Pres",
-				Slides: testSlides(),
+				ID:      validUUID(),
+				Title:   "Test Pres",
+				Content: "<h1>Slide 1</h1>\n---\n<h1>Slide 2</h1>\n---\n<h1>Slide 3</h1>",
 			}, nil
 		},
 	})
@@ -226,10 +226,10 @@ func recvError(t *testing.T, conn *mockConn, expectedCode string) {
 }
 
 type initResponse struct {
-	PresentationID string               `json:"presentation_id"`
-	Slides         []presentation.Slide `json:"slides"`
-	CurrentIndex   int                  `json:"current_index"`
-	RoomCode       string               `json:"room_code"`
+	PresentationID string   `json:"presentation_id"`
+	Slides         []string `json:"slides"`
+	CurrentIndex   int      `json:"current_index"`
+	RoomCode       string   `json:"room_code"`
 }
 
 func initAndGetCode(t *testing.T, conn *mockConn) string {
@@ -453,10 +453,10 @@ func TestClient_HandleJoin_Valid(t *testing.T) {
 	recvAnnotationsBatch(t, viewer)
 
 	var join struct {
-		PresentationID string               `json:"presentation_id"`
-		Slides         []presentation.Slide `json:"slides"`
-		CurrentIndex   int                  `json:"current_index"`
-		RoomCode       string               `json:"room_code"`
+		PresentationID string   `json:"presentation_id"`
+		Slides         []string `json:"slides"`
+		CurrentIndex   int      `json:"current_index"`
+		RoomCode       string   `json:"room_code"`
 	}
 	if err := json.Unmarshal(data, &join); err != nil {
 		t.Fatalf("failed to unmarshal join data: %v", err)

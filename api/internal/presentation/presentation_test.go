@@ -14,15 +14,11 @@ import (
 )
 
 type mockPresentationStore struct {
-	createFunc       func(ctx context.Context, id, title string) error
-	getByIDFunc      func(ctx context.Context, id string) (*Presentation, error)
-	updateFunc  func(ctx context.Context, id, title string, slideOrder []string) error
-	deleteFunc       func(ctx context.Context, id string) error
-	listFunc         func(ctx context.Context) ([]*PresentationPreview, error)
-	createSlideFunc  func(ctx context.Context, presID, slideID, content string) error
-	getSlideFunc     func(ctx context.Context, presID, slideID string) (*Slide, error)
-	updateSlideFunc  func(ctx context.Context, presID, slideID, content string) error
-	deleteSlideFunc  func(ctx context.Context, presID, slideID string) error
+	createFunc  func(ctx context.Context, id, title string) error
+	getByIDFunc func(ctx context.Context, id string) (*Presentation, error)
+	updateFunc  func(ctx context.Context, id, title, content string) error
+	deleteFunc  func(ctx context.Context, id string) error
+	listFunc    func(ctx context.Context) ([]*PresentationPreview, error)
 }
 
 func (m *mockPresentationStore) Create(ctx context.Context, id, title string) error {
@@ -33,8 +29,8 @@ func (m *mockPresentationStore) GetByID(ctx context.Context, id string) (*Presen
 	return m.getByIDFunc(ctx, id)
 }
 
-func (m *mockPresentationStore) Update(ctx context.Context, id, title string, slideOrder []string) error {
-	return m.updateFunc(ctx, id, title, slideOrder)
+func (m *mockPresentationStore) Update(ctx context.Context, id, title, content string) error {
+	return m.updateFunc(ctx, id, title, content)
 }
 
 func (m *mockPresentationStore) Delete(ctx context.Context, id string) error {
@@ -43,22 +39,6 @@ func (m *mockPresentationStore) Delete(ctx context.Context, id string) error {
 
 func (m *mockPresentationStore) List(ctx context.Context) ([]*PresentationPreview, error) {
 	return m.listFunc(ctx)
-}
-
-func (m *mockPresentationStore) CreateSlide(ctx context.Context, presID, slideID, content string) error {
-	return m.createSlideFunc(ctx, presID, slideID, content)
-}
-
-func (m *mockPresentationStore) GetSlide(ctx context.Context, presID, slideID string) (*Slide, error) {
-	return m.getSlideFunc(ctx, presID, slideID)
-}
-
-func (m *mockPresentationStore) UpdateSlide(ctx context.Context, presID, slideID, content string) error {
-	return m.updateSlideFunc(ctx, presID, slideID, content)
-}
-
-func (m *mockPresentationStore) DeleteSlide(ctx context.Context, presID, slideID string) error {
-	return m.deleteSlideFunc(ctx, presID, slideID)
 }
 
 func TestCreatePresentation_ValidInput(t *testing.T) {
@@ -219,11 +199,9 @@ func TestGetPresentation_Found(t *testing.T) {
 	store := &mockPresentationStore{
 		getByIDFunc: func(ctx context.Context, id string) (*Presentation, error) {
 			return &Presentation{
-				ID:    id,
-				Title: "Test",
-				Slides: []Slide{
-					{ID: "s1", Content: "<h1>Hi</h1>"},
-				},
+				ID:      id,
+				Title:   "Test",
+				Content: "<h1>Hi</h1>",
 			}, nil
 		},
 	}
@@ -247,8 +225,8 @@ func TestGetPresentation_Found(t *testing.T) {
 	if payload.Data.ID != "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f" {
 		t.Errorf("got id %q, want %q", payload.Data.ID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
 	}
-	if len(payload.Data.Slides) != 1 {
-		t.Errorf("got %d slides, want 1", len(payload.Data.Slides))
+	if payload.Data.Content != "<h1>Hi</h1>" {
+		t.Errorf("got content %q, want %q", payload.Data.Content, "<h1>Hi</h1>")
 	}
 }
 
@@ -308,17 +286,17 @@ func TestGetPresentation_InvalidUUID(t *testing.T) {
 func TestUpdatePresentation_Valid(t *testing.T) {
 	var called bool
 	store := &mockPresentationStore{
-		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
+		updateFunc: func(ctx context.Context, id, title, content string) error {
 			called = true
 			return nil
 		},
 		getByIDFunc: func(ctx context.Context, id string) (*Presentation, error) {
-			return &Presentation{ID: id, Title: "Updated", Slides: []Slide{}}, nil
+			return &Presentation{ID: id, Title: "Updated", Content: "<h1>Hello</h1>"}, nil
 		},
 	}
 
 	handler := updatePresentationHandler(store)
-	body := `{"title":"Updated"}`
+	body := `{"title":"Updated","content":"<h1>Hello</h1>"}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
@@ -329,20 +307,20 @@ func TestUpdatePresentation_Valid(t *testing.T) {
 		t.Errorf("got status %d, want %d", rec.Code, http.StatusOK)
 	}
 	if !called {
-		t.Error("expected store.UpdateTitle to be called")
+		t.Error("expected store.Update to be called")
 	}
 }
 
 func TestUpdatePresentation_InvalidUUID(t *testing.T) {
 	store := &mockPresentationStore{
-		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
-			t.Error("store.UpdateTitle should not be called")
+		updateFunc: func(ctx context.Context, id, title, content string) error {
+			t.Error("store.Update should not be called")
 			return nil
 		},
 	}
 
 	handler := updatePresentationHandler(store)
-	body := `{"title":"Updated"}`
+	body := `{"title":"Updated","content":""}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.SetPathValue(pathKeyPresentationID, "bad")
@@ -364,14 +342,14 @@ func TestUpdatePresentation_InvalidUUID(t *testing.T) {
 
 func TestUpdatePresentation_EmptyTitle(t *testing.T) {
 	store := &mockPresentationStore{
-		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
-			t.Error("store.UpdateTitle should not be called")
+		updateFunc: func(ctx context.Context, id, title, content string) error {
+			t.Error("store.Update should not be called")
 			return nil
 		},
 	}
 
 	handler := updatePresentationHandler(store)
-	body := `{"title":"  "}`
+	body := `{"title":"  ","content":""}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
@@ -393,8 +371,8 @@ func TestUpdatePresentation_EmptyTitle(t *testing.T) {
 
 func TestUpdatePresentation_InvalidJSON(t *testing.T) {
 	store := &mockPresentationStore{
-		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
-			t.Error("store.UpdateTitle should not be called")
+		updateFunc: func(ctx context.Context, id, title, content string) error {
+			t.Error("store.Update should not be called")
 			return nil
 		},
 	}
@@ -422,13 +400,13 @@ func TestUpdatePresentation_InvalidJSON(t *testing.T) {
 
 func TestUpdatePresentation_NotFound(t *testing.T) {
 	store := &mockPresentationStore{
-		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
+		updateFunc: func(ctx context.Context, id, title, content string) error {
 			return ErrNotFound
 		},
 	}
 
 	handler := updatePresentationHandler(store)
-	body := `{"title":"Updated"}`
+	body := `{"title":"Updated","content":""}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
@@ -450,13 +428,13 @@ func TestUpdatePresentation_NotFound(t *testing.T) {
 
 func TestUpdatePresentation_StoreError(t *testing.T) {
 	store := &mockPresentationStore{
-		updateFunc: func(ctx context.Context, id, title string, slideOrder []string) error {
+		updateFunc: func(ctx context.Context, id, title, content string) error {
 			return errors.New("db error")
 		},
 	}
 
 	handler := updatePresentationHandler(store)
-	body := `{"title":"Updated"}`
+	body := `{"title":"Updated","content":""}`
 	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
@@ -473,6 +451,80 @@ func TestUpdatePresentation_StoreError(t *testing.T) {
 	}
 	if payload.Error.Code != cfg.ErrInternalError {
 		t.Errorf("got code %q, want %q", payload.Error.Code, cfg.ErrInternalError)
+	}
+}
+
+func TestUpdatePresentation_SanitizesScriptTag(t *testing.T) {
+	var capturedContent string
+	store := &mockPresentationStore{
+		updateFunc: func(ctx context.Context, id, title, content string) error {
+			capturedContent = content
+			return nil
+		},
+		getByIDFunc: func(ctx context.Context, id string) (*Presentation, error) {
+			return &Presentation{ID: id, Title: "Updated", Content: capturedContent}, nil
+		},
+	}
+
+	handler := updatePresentationHandler(store)
+	body := `{"title":"Updated","content":"<script>alert('xss')</script><h1>Hello</h1>"}`
+	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	if strings.Contains(capturedContent, "<script") {
+		t.Error("content should not contain script tags after sanitization")
+	}
+	if !strings.Contains(capturedContent, "<h1>") {
+		t.Error("content should contain allowed tags after sanitization")
+	}
+
+	var payload struct {
+		Data Presentation `json:"data"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+		t.Fatal("expected valid JSON, got:", rec.Body.String())
+	}
+	if strings.Contains(payload.Data.Content, "<script") {
+		t.Error("response content should not contain script tags after sanitization")
+	}
+}
+
+func TestUpdatePresentation_SanitizesIframeTag(t *testing.T) {
+	var capturedContent string
+	store := &mockPresentationStore{
+		updateFunc: func(ctx context.Context, id, title, content string) error {
+			capturedContent = content
+			return nil
+		},
+		getByIDFunc: func(ctx context.Context, id string) (*Presentation, error) {
+			return &Presentation{ID: id, Title: "Updated", Content: capturedContent}, nil
+		},
+	}
+
+	handler := updatePresentationHandler(store)
+	body := `{"title":"Updated","content":"<iframe src=\"evil.com\"></iframe><h1>Safe</h1>"}`
+	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue(pathKeyPresentationID, "0192e5a0-7b7f-7b7f-8b7f-0192e5a07b7f")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("got status %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	if strings.Contains(capturedContent, "<iframe") {
+		t.Error("content should not contain iframe tags after sanitization")
+	}
+	if !strings.Contains(capturedContent, "<h1>") {
+		t.Error("content should contain allowed tags after sanitization")
 	}
 }
 

@@ -40,34 +40,29 @@ Requests to the API require authentication via a JWT token. The token must be se
       "data": {
           "id": "string",
           "title": "string",
-          "slides": []
+          "content": ""
       }
   }
   ```
 
-- [x] `GET /api/v1/presentation/:presentationId`: Retrieves the details of a specific presentation, including its slides.
-  - Response: Returns the presentation object with its slides.
+- [x] `GET /api/v1/presentation/:presentationId`: Retrieves the details of a specific presentation.
+  - Response: Returns the presentation object.
   ```json
   {
       "data": {
           "id": "string",
           "title": "string",
-          "slide_order": ["string"],
-          "slides": [
-              {
-                  "id": "string",
-                  "content": "string"
-              }
-          ]
+           "content": "string" // HTML content with slides separated by `\n---\n` (splitting is lenient: 3+ dashes with optional whitespace)
       }
   }
   ```
 
-- [x] `PUT /api/v1/presentation/:presentationId`: Updates the title of the specified presentation.
+- [x] `PUT /api/v1/presentation/:presentationId`: Updates the title and content of the specified presentation.
   - Request Body:
   ```json
   {
-      "title": "string" // The new title for the presentation.
+      "title": "string", // The new title for the presentation.
+      "content": "string" // The full HTML content, slides separated by `\n---\n` (splitting is lenient).
   }
   ```
   - Response: Returns the updated presentation object.
@@ -76,69 +71,12 @@ Requests to the API require authentication via a JWT token. The token must be se
       "data": {
           "id": "string",
           "title": "string",
-          "slide_order": ["string"],
-          "slides": [
-              {
-                  "id": "string",
-                  "content": "string"
-              }
-          ]
-      }
-  }
-  ```
-
-- [x] `DELETE /api/v1/presentation/:presentationId`: Deletes the specified presentation and all its slides.
-  - Response: Returns an http status code indicating success or failure.
-
-### Slide Management
-
-- [x] `POST /api/v1/presentation/:presentationId/slides`: Adds a new slide to the specified presentation.
-  - Request Body:
-  ```json
-  {
-      "id": "string", // The unique identifier for the slide. UUIDv7 format is required.
-      "content": "string" // The content of the slide, which must be a sanitized and valid Reveal.js code.
-  }
-  ```
-  - Response: Returns the new slide object.
-  ```json
-  {
-      "data": {
-          "id": "string",
           "content": "string"
       }
   }
   ```
 
-- [x] `GET /api/v1/presentation/:presentationId/slides/:slideId`: Retrieves the details of a specific slide in the specified presentation.
-  - Response: Returns the slide object.
-  ```json
-  {
-      "data": {
-          "id": "string",
-          "content": "string"
-      }
-  }
-  ```
-
-- [x] `PUT /api/v1/presentation/:presentationId/slides/:slideId`: Updates the content of a specific slide in the specified presentation.
-  - Request Body:
-  ```json
-  {
-      "content": "string" // The new content for the slide, which must be a sanitized and valid Reveal.js code.
-  }
-  ```
-  - Response: Returns the updated slide object.
-  ```json
-  {
-      "data": {
-          "id": "string",
-          "content": "string"
-      }
-  }
-  ```
-
-- [x] `DELETE /api/v1/presentation/:presentationId/slides/:slideId`: Deletes a specific slide from the specified presentation.
+- [x] `DELETE /api/v1/presentation/:presentationId`: Deletes the specified presentation.
   - Response: Returns an http status code indicating success or failure.
 
 ### Student Management

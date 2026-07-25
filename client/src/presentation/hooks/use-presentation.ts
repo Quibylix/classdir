@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getPresentation, updatePresentationTitle } from '../api'
+import { getPresentation, updatePresentation } from '../api'
 import type { Presentation } from '../types'
 import type { FetchError } from '../../shared/api/fetch'
 
@@ -21,13 +21,13 @@ export function usePresentation(id: string) {
       .finally(() => setIsLoading(false))
   }, [id])
 
-  function updateTitle(title: string) {
+  function saveContent(title: string, content: string) {
     if (isSaving) return
 
     setIsSaving(true)
     setError(null)
 
-    return updatePresentationTitle(id, title)
+    return updatePresentation(id, title, content)
       .match(
         (data) => setPresentation(data),
         (e) => setError(e),
@@ -35,5 +35,5 @@ export function usePresentation(id: string) {
       .finally(() => setIsSaving(false))
   }
 
-  return { presentation, isLoading, isSaving, error, updateTitle }
+  return { presentation, isLoading, isSaving, error, saveContent }
 }
