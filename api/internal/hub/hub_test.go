@@ -413,6 +413,42 @@ func TestClient_HandleInit_Valid(t *testing.T) {
 	}
 }
 
+func TestClient_HandleInit_ConsecutiveSeparators(t *testing.T) {
+	hub := NewHub(&mockStore{
+		getByIDFunc: func(ctx context.Context, id string) (*presentation.Presentation, error) {
+			return &presentation.Presentation{
+				ID:      validUUID(),
+				Title:   "Edge Case Pres",
+				Content: "<h1>Slide 1</h1>\n---\n---\n<h1>Slide 3</h1>",
+			}, nil
+		},
+	})
+	conn := newMockConn()
+
+	startClient(hub, conn, DefaultRateLimitProvider{}, authCookie(t))
+
+	sendCommand(t, conn, CmdInitPresentation, `"presentation_id":"`+validUUID()+`"`)
+
+	data := recvData(t, conn)
+	recvAnnotationsBatch(t, conn)
+	var ir initResponse
+	if err := json.Unmarshal(data, &ir); err != nil {
+		t.Fatalf("failed to unmarshal init data: %v", err)
+	}
+	if len(ir.Slides) != 3 {
+		t.Fatalf("expected 3 slides (empty middle), got %d: %q", len(ir.Slides), ir.Slides)
+	}
+	if ir.Slides[0] != "<h1>Slide 1</h1>\n" {
+		t.Fatalf("expected slide 0 %q, got %q", "<h1>Slide 1</h1>\n", ir.Slides[0])
+	}
+	if ir.Slides[1] != "" {
+		t.Fatalf("expected slide 1 to be empty, got %q", ir.Slides[1])
+	}
+	if ir.Slides[2] != "<h1>Slide 3</h1>" {
+		t.Fatalf("expected slide 2 %q, got %q", "<h1>Slide 3</h1>", ir.Slides[2])
+	}
+}
+
 func TestClient_HandleInit_InvalidUUID(t *testing.T) {
 	hub := newTestHub()
 	conn := newMockConn()

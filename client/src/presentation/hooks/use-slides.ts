@@ -35,5 +35,5 @@ export function useSlides(initialContent: string) {
 
 function splitContent(content: string): string[] {
   if (!content) return ['']
-  return content.split(/\n---+\s*\n/)
+  return content.split(/^---+\s*\n/m).map(p => p.replace(/^\n+/, ""))
 }

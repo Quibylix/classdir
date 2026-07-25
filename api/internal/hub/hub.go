@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"regexp"
+	"strings"
 	"sync"
 
 	"classdir/api/internal/presentation"
@@ -61,7 +62,11 @@ func (h *Hub) GetOrCreateRoom(id string) (*Room, error) {
 		return existingRoom, nil
 	}
 
-	slides := regexp.MustCompile(`\n---+\s*\n`).Split(pres.Content, -1)
+	rawSlides := regexp.MustCompile(`(?m)^---+\s*\n`).Split(pres.Content, -1)
+	slides := make([]string, len(rawSlides))
+	for i, s := range rawSlides {
+		slides[i] = strings.TrimLeft(s, "\n\r")
+	}
 	room := NewRoom(id, h.generateCodeLocked(), h, slides)
 	h.rooms[id] = room
 	h.roomsByCode[room.Code] = room
