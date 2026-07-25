@@ -126,6 +126,7 @@ func updatePresentationHandler(store Store) http.HandlerFunc {
 		}
 
 		sanitized := sanitize.RevealPolicy.Sanitize(body.Content)
+		sanitized = strings.TrimSpace(sanitized)
 
 		if err := store.Update(r.Context(), id, body.Title, sanitized); err != nil {
 			if errors.Is(err, ErrNotFound) {
