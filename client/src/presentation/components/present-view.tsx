@@ -2,10 +2,12 @@ import { useEffect, useCallback } from 'react'
 import { useParams } from 'react-router'
 import { Box, Center, Container, Loader, Paper, Text } from '@mantine/core'
 import { useSlideShow } from '../hooks/use-slide-show'
+import { useWakeLock } from '../../shared/hooks/use-wake-lock'
 import { WS_CMD_JOIN_ROOM } from '../cfg'
 import { visibleStrokes, drawStrokes } from '../utils/annotation-canvas'
 
 export function PresentView() {
+  useWakeLock()
   const { code } = useParams<{ code: string }>()
   const { cachedHtml, slideCount, currentSlide, loading, fetchError, iframeRef, canvasRef, operationsBySlide } =
     useSlideShow(code ? { command: WS_CMD_JOIN_ROOM, parameters: { room_code: code } } : null)

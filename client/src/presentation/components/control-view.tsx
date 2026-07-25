@@ -10,12 +10,14 @@ import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash'
 import { useSlideShow } from '../hooks/use-slide-show'
 import { useAnnotation } from '../hooks/use-annotation'
 import { useSlideGestures } from '../hooks/use-slide-gestures'
+import { useWakeLock } from '../../shared/hooks/use-wake-lock'
 import { DraggableFab } from './draggable-fab'
 import { CLIENT_CONFIGURE } from '../../shared/cfg/routes'
 import { WS_CMD_INIT_PRESENTATION, ANNOTATION_COLORS, ANNOTATION_MIN_THICKNESS, ANNOTATION_MAX_THICKNESS } from '../cfg'
 import { visibleStrokes, drawStrokes } from '../utils/annotation-canvas'
 
 export function ControlView() {
+  useWakeLock()
   const { id } = useParams<{ id: string }>()
   const { send, cachedHtml, slideCount, currentSlide, loading, fetchError, roomCode, iframeRef, canvasRef, operationsBySlide } =
     useSlideShow(id ? { command: WS_CMD_INIT_PRESENTATION, parameters: { presentation_id: id } } : null)
