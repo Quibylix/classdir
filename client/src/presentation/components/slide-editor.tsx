@@ -41,7 +41,7 @@ export function SlideEditor({ content, onSave, isSaving }: SlideEditorProps) {
           </Button>
         </Group>
       </Group>
-      <Group align="stretch" h="100%" gap="md">
+      <Group align="stretch" mih={0} gap="md">
         <Paper
           ref={editorRef}
           flex={1}
