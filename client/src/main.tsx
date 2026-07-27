@@ -1,17 +1,10 @@
 import "@mantine/core/styles.css";
-import { MantineProvider } from "@mantine/core";
-import { StrictMode } from "react";
+import { Center, Container, Loader, MantineProvider } from "@mantine/core";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router";
 import { AuthProvider } from "./auth/auth-provider";
 import { ProtectedRoute } from "./auth/components/protected-route";
-import { LandingPage } from "./auth/components/landing-page";
-import { LoginPage } from "./auth/components/login-page";
-import { PresentationListPage } from "./presentation/components/presentation-list-page";
-import { PresentationDetailPage } from "./presentation/components/presentation-detail-page";
-import { PresentView } from "./presentation/components/present-view";
-import { PresentCodeEntry } from "./presentation/components/present-code-entry";
-import { ControlView } from "./presentation/components/control-view";
 import {
   ROOT,
   CLIENT_LOGIN,
@@ -22,41 +15,65 @@ import {
   clientControl,
 } from "./shared/cfg/routes";
 
+export const LandingPageLazy = lazy(() => import("./auth/components/landing-page"));
+export const LoginPageLazy = lazy(() => import("./auth/components/login-page"));
+export const PresentationListPageLazy = lazy(
+  () => import("./presentation/components/presentation-list-page"),
+);
+export const PresentationDetailPageLazy = lazy(
+  () => import("./presentation/components/presentation-detail-page"),
+);
+export const PresentViewLazy = lazy(() => import("./presentation/components/present-view"));
+export const PresentCodeEntryLazy = lazy(
+  () => import("./presentation/components/present-code-entry"),
+);
+export const ControlViewLazy = lazy(() => import("./presentation/components/control-view"));
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <BrowserRouter>
         <MantineProvider defaultColorScheme="dark">
-          <Routes>
-            <Route path={ROOT} element={<LandingPage />} />
-            <Route path={CLIENT_LOGIN} element={<LoginPage />} />
-            <Route
-              path={CLIENT_CONFIGURE}
-              element={
-                <ProtectedRoute>
-                  <PresentationListPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={clientConfigure(":id")}
-              element={
-                <ProtectedRoute>
-                  <PresentationDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path={clientPresent(":code")} element={<PresentView />} />
-            <Route path={CLIENT_PRESENT} element={<PresentCodeEntry />} />
-            <Route
-              path={clientControl(":id")}
-              element={
-                <ProtectedRoute>
-                  <ControlView />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <Suspense
+            fallback={
+              <Container fluid h="100dvh">
+                <Center w="100%" h="100%">
+                  <Loader />
+                </Center>
+              </Container>
+            }
+          >
+            <Routes>
+              <Route path={ROOT} element={<LandingPageLazy />} />
+              <Route path={CLIENT_LOGIN} element={<LoginPageLazy />} />
+              <Route
+                path={CLIENT_CONFIGURE}
+                element={
+                  <ProtectedRoute>
+                    <PresentationListPageLazy />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={clientConfigure(":id")}
+                element={
+                  <ProtectedRoute>
+                    <PresentationDetailPageLazy />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path={clientPresent(":code")} element={<PresentViewLazy />} />
+              <Route path={CLIENT_PRESENT} element={<PresentCodeEntryLazy />} />
+              <Route
+                path={clientControl(":id")}
+                element={
+                  <ProtectedRoute>
+                    <ControlViewLazy />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
         </MantineProvider>
       </BrowserRouter>
     </AuthProvider>

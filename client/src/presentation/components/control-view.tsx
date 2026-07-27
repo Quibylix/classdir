@@ -34,7 +34,7 @@ import {
 } from "../cfg";
 import { visibleStrokes, drawStrokes } from "../utils/annotation-canvas";
 
-export function ControlView() {
+export default function ControlView() {
   useWakeLock();
   const { id } = useParams<{ id: string }>();
   const {

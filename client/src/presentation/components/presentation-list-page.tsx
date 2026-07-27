@@ -22,7 +22,7 @@ import { DeleteModal } from "./delete-modal";
 import { clientConfigure, clientControl, CLIENT_LOGIN } from "../../shared/cfg/routes";
 import styles from "./presentation-list-page.module.css";
 
-export function PresentationListPage() {
+export default function PresentationListPage() {
   const { presentations, isLoading, isCreating, isDeleting, error, refresh, create, remove } =
     usePresentationList();
   const { logout } = useAuth();

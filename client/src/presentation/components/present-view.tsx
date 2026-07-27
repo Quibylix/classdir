@@ -6,7 +6,7 @@ import { useWakeLock } from "../../shared/hooks/use-wake-lock";
 import { WS_CMD_JOIN_ROOM } from "../cfg";
 import { visibleStrokes, drawStrokes } from "../utils/annotation-canvas";
 
-export function PresentView() {
+export default function PresentView() {
   useWakeLock();
   const { code } = useParams<{ code: string }>();
   const {

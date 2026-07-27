@@ -7,7 +7,7 @@ import { DeleteModal } from "./delete-modal";
 import { SlideEditor } from "./slide-editor";
 import { CLIENT_CONFIGURE, clientControl } from "../../shared/cfg/routes";
 
-export function PresentationDetailPage() {
+export default function PresentationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 

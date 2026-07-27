@@ -48,7 +48,7 @@ const FEATURES = [
   },
 ];
 
-export function LandingPage() {
+export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 

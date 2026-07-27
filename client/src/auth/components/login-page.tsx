@@ -18,7 +18,7 @@ import { CLIENT_LOGIN, CLIENT_CONFIGURE } from "../../shared/cfg/routes";
 import { ERR_AUTH_INVALID_PASSWORD, ERR_AUTH_CONNECTION } from "../../shared/cfg/messages";
 import { LOGIN_RESULT } from "../types";
 
-export function LoginPage() {
+export default function LoginPage() {
   const { isAuthenticated, isLoading, login } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

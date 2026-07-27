@@ -3,11 +3,11 @@ import { useNavigate } from "react-router";
 import { Button, Center, Container, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
 import { CLIENT_PRESENT } from "../../shared/cfg/routes";
 
-export function PresentCodeEntry() {
+export default function PresentCodeEntry() {
   const [code, setCode] = useState("");
   const navigate = useNavigate();
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     if (code.trim().length === 8) {
       navigate(`${CLIENT_PRESENT}/${code.trim()}`);
