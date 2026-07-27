@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { Box, Button, Center, Group, Loader, Stack, Text, TextInput, Title } from "@mantine/core";
-import { CaretLeftIcon } from "@phosphor-icons/react/dist/csr/CaretLeft";
-import { CaretRightIcon } from "@phosphor-icons/react/dist/csr/CaretRight";
-import { PlusIcon } from "@phosphor-icons/react/dist/csr/Plus";
-import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { usePresentation } from "../hooks/use-presentation";
-import { useSlides } from "../hooks/use-slides";
 import { deletePresentation } from "../api";
 import { DeleteModal } from "./delete-modal";
 import { SlideEditor } from "./slide-editor";
@@ -17,14 +12,11 @@ export function PresentationDetailPage() {
   const navigate = useNavigate();
 
   const { presentation, isLoading, isSaving, error, saveContent } = usePresentation(id ?? "");
-  const { slides, addSlide, removeSlide, joinSlides } = useSlides(presentation?.content ?? "");
 
   const [editTitle, setEditTitle] = useState("");
   const [editing, setEditing] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   if (isLoading) {
     return (
@@ -67,8 +59,8 @@ export function PresentationDetailPage() {
   }
 
   function handleSaveTitle() {
-    if (!editTitle.trim()) return;
-    saveContent(editTitle.trim(), joinSlides())?.finally(() => setEditing(false));
+    if (!editTitle.trim() || !presentation) return;
+    saveContent(editTitle.trim(), presentation.content)?.finally(() => setEditing(false));
   }
 
   function handleDeleteConfirm() {
@@ -83,25 +75,10 @@ export function PresentationDetailPage() {
     );
   }
 
-  function handleSaveSlideContent(content: string) {
+  function handleSaveContent(content: string) {
     if (!presentation) return;
     saveContent(presentation.title, content);
   }
-
-  function handleAddSlide() {
-    addSlide();
-    setCurrentIndex(slides.length);
-  }
-
-  function handleRemoveSlide() {
-    if (currentIndex >= slides.length) return;
-    removeSlide(currentIndex);
-    if (currentIndex >= slides.length - 1) {
-      setCurrentIndex(Math.max(0, slides.length - 2));
-    }
-  }
-
-  if (!presentation) return null;
 
   return (
     <Stack h="100vh" p="md" gap="sm" bg="dark.9">
@@ -167,66 +144,12 @@ export function PresentationDetailPage() {
         </Group>
       )}
 
-      <Group justify="space-between">
-        <Group>
-          <Button
-            variant="outline"
-            color="gray"
-            size="sm"
-            onClick={() => setCurrentIndex(currentIndex - 1)}
-            disabled={currentIndex <= 0}
-            px="xs"
-            style={{ borderColor: "var(--mantine-color-dark-6)" }}
-          >
-            <CaretLeftIcon size={16} />
-          </Button>
-          <Text size="sm" c="dimmed">
-            {slides.length > 0 ? `${currentIndex + 1} / ${slides.length}` : "0 / 0"}
-          </Text>
-          <Button
-            variant="outline"
-            color="gray"
-            size="sm"
-            onClick={() => setCurrentIndex(currentIndex + 1)}
-            disabled={currentIndex >= slides.length - 1}
-            px="xs"
-            style={{ borderColor: "var(--mantine-color-dark-6)" }}
-          >
-            <CaretRightIcon size={16} />
-          </Button>
-        </Group>
-        <Group>
-          <Button leftSection={<PlusIcon size={16} />} onClick={handleAddSlide}>
-            Add Slide
-          </Button>
-          <Button
-            leftSection={<TrashIcon size={16} />}
-            color="red"
-            variant="outline"
-            onClick={handleRemoveSlide}
-            disabled={slides.length === 0}
-          >
-            Delete Slide
-          </Button>
-        </Group>
-      </Group>
-
       <Box style={{ flex: 1, minHeight: 0 }}>
-        {slides.length > 0 ? (
-          <SlideEditor
-            slides={slides}
-            currentIndex={currentIndex}
-            onSave={handleSaveSlideContent}
-            isSaving={isSaving}
-          />
-        ) : (
-          <Center h="100%">
-            <Stack align="center" gap="md">
-              <Text c="dimmed">No slides yet</Text>
-              <Button onClick={handleAddSlide}>Add your first slide</Button>
-            </Stack>
-          </Center>
-        )}
+        <SlideEditor
+          content={presentation.content}
+          onSave={handleSaveContent}
+          isSaving={isSaving}
+        />
       </Box>
 
       <DeleteModal

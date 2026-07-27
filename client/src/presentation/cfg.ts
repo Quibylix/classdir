@@ -21,8 +21,6 @@ export const CDN_REVEAL_CSS = `https://cdn.jsdelivr.net/npm/${CDN_REVEAL_VERSION
 export const CDN_REVEAL_THEME_CSS = `https://cdn.jsdelivr.net/npm/${CDN_REVEAL_VERSION}/dist/theme/black.css`;
 export const CDN_REVEAL_JS = `https://cdn.jsdelivr.net/npm/${CDN_REVEAL_VERSION}/dist/reveal.js`;
 
-export const DEFAULT_SLIDE_CONTENT = "<h1>New Slide</h1>";
-
 export const ANNOTATION_COLORS = [
   "#ff0000",
   "#00ff00",
