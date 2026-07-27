@@ -1,101 +1,36 @@
-import { useRef, useEffect, useState, useCallback } from "react";
-import type { EditorView } from "codemirror";
+import { useRef, useEffect, useMemo } from "react";
 import { Box, Button, Group, Paper, Stack } from "@mantine/core";
 import { buildPreviewHtml } from "../utils/reveal-html";
+import { useCodeMirrorEditor } from "../hooks/use-codemirror-editor";
 
 type SlideEditorProps = {
-  slides: string[];
-  currentIndex: number;
+  content: string;
   onSave: (content: string) => void;
   isSaving: boolean;
 };
 
-export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
-  const previewRef = useRef<HTMLIFrameElement>(null);
-  const [content, setContent] = useState("");
+export function SlideEditor({ content, onSave, isSaving }: SlideEditorProps) {
+  const { editorRef, doc, setContent, setReadOnly } = useCodeMirrorEditor(content, isSaving);
 
-  const lastIndexRef = useRef(currentIndex);
-  const currentPropContent = slides[currentIndex] ?? "";
-  const lastPropContentRef = useRef(currentPropContent);
-  const contentRef = useRef(content);
-  contentRef.current = content;
-
-  const updateEditorContentIfNeeded = useCallback(() => {
-    const view = viewRef.current;
-    if (!view) return;
-
-    const hasSlideChanged = currentIndex !== lastIndexRef.current;
-    const hasPropContentChanged = currentPropContent !== lastPropContentRef.current;
-
-    if (hasSlideChanged || hasPropContentChanged) {
-      lastIndexRef.current = currentIndex;
-      lastPropContentRef.current = currentPropContent;
-
-      setContent(currentPropContent);
-
-      if (view.state.doc.toString() !== currentPropContent) {
-        view.dispatch({
-          changes: { from: 0, to: view.state.doc.length, insert: currentPropContent },
-        });
-      }
-    }
-  }, [currentIndex, currentPropContent]);
+  const lastPropContentRef = useRef(content);
 
   useEffect(() => {
-    let isMounted = true;
+    if (content === lastPropContentRef.current) return;
+    lastPropContentRef.current = content;
 
-    async function loadCodeMirror() {
-      if (!editorRef.current) return;
-
-      const { EditorView, basicSetup } = await import("codemirror");
-      const { html } = await import("@codemirror/lang-html");
-
-      if (!isMounted) return;
-
-      if (editorRef.current) {
-        editorRef.current.innerHTML = "";
-      }
-
-      const view = new EditorView({
-        doc: contentRef.current,
-        extensions: [
-          basicSetup,
-          html(),
-          EditorView.theme({}, { dark: true }),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              setContent(update.state.doc.toString());
-            }
-          }),
-        ],
-        parent: editorRef.current,
-      });
-
-      viewRef.current = view;
-      updateEditorContentIfNeeded();
-    }
-
-    loadCodeMirror();
-
-    return () => {
-      isMounted = false;
-      viewRef.current?.destroy();
-      viewRef.current = null;
-    };
-  }, [updateEditorContentIfNeeded]);
+    setContent(content);
+  }, [content, setContent]);
 
   useEffect(() => {
-    updateEditorContentIfNeeded();
-  }, [updateEditorContentIfNeeded]);
+    setReadOnly(isSaving);
+  }, [isSaving, setReadOnly]);
 
-  const handleSave = useCallback(() => {
-    const updatedSlides = slides.map((s, i) => (i === currentIndex ? content : s));
-    onSave(updatedSlides.map((slide) => slide.trim()).join("\n---\n"));
-  }, [onSave, slides, currentIndex, content]);
+  const handleSave = () => onSave(doc);
 
-  const previewHtml = buildPreviewHtml(slides, currentIndex);
+  const previewHtml = useMemo(() => {
+    const slides = content.split(/^---+\s*\n/m).map((p) => p.replace(/^\n+/, ""));
+    return buildPreviewHtml(slides, 0);
+  }, [content]);
 
   return (
     <Stack h="100%">
@@ -107,10 +42,19 @@ export function SlideEditor({ slides, currentIndex, onSave, isSaving }: SlideEdi
         </Group>
       </Group>
       <Group align="stretch" h="100%" gap="md">
-        <Paper ref={editorRef} flex={1} withBorder mih={400} style={{ overflow: "auto" }} />
-        <Box flex={1} mih={400}>
+        <Paper
+          ref={editorRef}
+          flex={1}
+          withBorder
+          h="100%"
+          style={{
+            overflow: "hidden",
+            opacity: isSaving ? 0.6 : 1,
+            pointerEvents: isSaving ? "none" : "auto",
+          }}
+        />
+        <Box flex={1} h="100%">
           <iframe
-            ref={previewRef}
             srcDoc={previewHtml}
             title="Slide Preview"
             style={{
