@@ -1,6 +1,6 @@
 import { CDN_REVEAL_CSS, CDN_REVEAL_THEME_CSS, CDN_REVEAL_JS, POST_MSG_TYPE } from "../cfg";
 
-export const SLIDE_SEPARATOR = /^---+\s*\n/m;
+export const SLIDE_SEPARATOR = /^---+\s*$/m;
 
 export function splitSlides(content: string): string[] {
   return content.split(SLIDE_SEPARATOR).map((p) => p.replace(/^\n+/, ""));

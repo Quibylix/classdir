@@ -62,7 +62,7 @@ func (h *Hub) GetOrCreateRoom(id string) (*Room, error) {
 		return existingRoom, nil
 	}
 
-	rawSlides := regexp.MustCompile(`(?m)^---+\s*\n`).Split(pres.Content, -1)
+	rawSlides := regexp.MustCompile(`(?m)^---+\s*$`).Split(pres.Content, -1)
 	slides := make([]string, len(rawSlides))
 	for i, s := range rawSlides {
 		slides[i] = strings.TrimLeft(s, "\n\r")
