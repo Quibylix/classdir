@@ -19,7 +19,7 @@ import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { usePresentationList } from "../hooks/use-presentation-list";
 import { useAuth } from "../../auth/hooks/use-auth";
 import { DeleteModal } from "./delete-modal";
-import { clientConfigure, clientControl, CLIENT_LOGIN } from "../../shared/cfg/routes";
+import { clientConfigure, clientControl } from "../../shared/cfg/routes";
 import styles from "./presentation-list-page.module.css";
 
 export default function PresentationListPage() {
@@ -104,7 +104,6 @@ export default function PresentationListPage() {
                 style={{ borderColor: "var(--mantine-color-dark-6)" }}
                 onClick={() => {
                   logout();
-                  window.location.href = CLIENT_LOGIN;
                 }}
               >
                 Logout

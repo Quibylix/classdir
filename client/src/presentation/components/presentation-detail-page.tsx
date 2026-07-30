@@ -67,7 +67,7 @@ export default function PresentationDetailPage() {
     if (!presentation) return;
     setIsDeleting(true);
     deletePresentation(presentation.id).match(
-      () => navigate("/configure"),
+      () => navigate(CLIENT_CONFIGURE),
       () => {
         setIsDeleting(false);
         setDeleteModalOpen(false);
