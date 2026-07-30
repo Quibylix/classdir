@@ -14,12 +14,15 @@ export const WS_ANNOTATION_TYPE_CLEAR = "clear";
 
 export const POST_MSG_TYPE = {
   Navigate: "navigate",
+  UpdateSlides: "update_slides",
 } as const;
 
 export const CDN_REVEAL_VERSION = "reveal.js@6";
 export const CDN_REVEAL_CSS = `https://cdn.jsdelivr.net/npm/${CDN_REVEAL_VERSION}/dist/reveal.css`;
 export const CDN_REVEAL_THEME_CSS = `https://cdn.jsdelivr.net/npm/${CDN_REVEAL_VERSION}/dist/theme/black.css`;
 export const CDN_REVEAL_JS = `https://cdn.jsdelivr.net/npm/${CDN_REVEAL_VERSION}/dist/reveal.js`;
+
+export const SLIDE_PREVIEW_DEBOUNCE_MS = 300;
 
 export const ANNOTATION_COLORS = [
   "#ff0000",

@@ -1,10 +1,12 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import type { EditorView } from "codemirror";
+import { SLIDE_SEPARATOR } from "../utils/reveal-html";
 
 export function useCodeMirrorEditor(initialContent: string, initialReadOnly: boolean) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [doc, setDoc] = useState(initialContent);
+  const [cursorSlide, setCursorSlide] = useState(0);
 
   const readOnlyRef = useRef(initialReadOnly);
   const pendingDocRef = useRef(doc);
@@ -38,6 +40,10 @@ export function useCodeMirrorEditor(initialContent: string, initialReadOnly: boo
           ),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) setDoc(update.state.doc.toString());
+            if (update.docChanged || update.selectionSet) {
+              const head = update.state.selection.main.head;
+              setCursorSlide(update.state.sliceDoc(0, head).split(SLIDE_SEPARATOR).length - 1);
+            }
           }),
         ],
         parent: editorRef.current,
@@ -73,5 +79,5 @@ export function useCodeMirrorEditor(initialContent: string, initialReadOnly: boo
     setReadOnlyRef.current?.(readOnly);
   }, []);
 
-  return { editorRef, doc, setContent, setReadOnly };
+  return { editorRef, doc, cursorSlide, setContent, setReadOnly };
 }
