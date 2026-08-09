@@ -9,7 +9,11 @@
     "lint": "oxlint",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "PLAYWRIGHT_BROWSERS_PATH=./node_modules/.playwright-browsers vitest",
+    "test:run": "PLAYWRIGHT_BROWSERS_PATH=./node_modules/.playwright-browsers vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:browser": "PLAYWRIGHT_BROWSERS_PATH=./node_modules/.playwright-browsers vitest run --project browser"
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.11",
@@ -32,11 +36,15 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/browser-playwright": "^4.1.10",
     "oxfmt": "^0.60.0",
     "oxlint": "^1.71.0",
+    "playwright": "^1.62.1",
     "postcss": "^8.5.16",
     "postcss-preset-mantine": "^1.18.0",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10",
+    "vitest-browser-react": "^2.2.0"
   }
 }

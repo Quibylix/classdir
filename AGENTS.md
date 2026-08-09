@@ -33,12 +33,19 @@ cd client && pnpm install   # only if deps changed
 pnpm lint                   # oxlint
 pnpm fmt:check              # oxfmt --check
 pnpm build                  # tsc -b && vite build
+pnpm test:run               # vitest: unit (node) + browser (playwright/chromium) projects
 
 # Migrations
 ls database/migrations      # files are applied in lexical order; versions are NOT timestamped
 ```
 
 The client uses `oxlint` and `oxfmt` (not ESLint/Prettier). Configs: `client/.oxlintrc.json`, `client/.oxfmtrc.json`. Build runs `tsc -b` over the `tsconfig.app.json` + `tsconfig.node.json` project references.
+
+Tests use Vitest. Config: `client/vitest.config.ts` defines two projects — `unit` (node environment, `src/**/*.unit.test.ts`) and `browser` (chromium via Playwright, `src/**/*.browser.test.tsx`). Browser tests require a Chromium binary; once `pnpm install` is run, install it once with:
+```sh
+cd client && PLAYWRIGHT_BROWSERS_PATH=./node_modules/.playwright-browsers pnpm exec playwright install chromium
+```
+The project-local `node_modules/.playwright-browsers/` is used so no global cache permission is needed. The `test:*` scripts in `package.json` already set `PLAYWRIGHT_BROWSERS_PATH` for you. Tests are NOT run in the client Docker image (Playwright/Chromium isn't installed there); they're a host/CI step like `pnpm lint`/`pnpm build`.
 
 ## Contracts and cross-container changes
 
