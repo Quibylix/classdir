@@ -81,7 +81,7 @@ Requests to the API require authentication via a JWT token. The token must be se
 
 ### Student Management
 
-- [ ] `POST /api/v1/presentation/:presentationId/students`: Adds a new student to the specified presentation.
+- [x] `POST /api/v1/presentation/:presentationId/students`: Adds a new student to the specified presentation.
   - Request Body:
   ```json
   {
@@ -98,8 +98,9 @@ Requests to the API require authentication via a JWT token. The token must be se
       }
   }
   ```
+  - Errors: 404 `NOT_FOUND` when the presentation does not exist; 409 `CONFLICT` when a student with the same id or name already exists in this presentation.
 
-- [ ] `GET /api/v1/presentation/:presentationId/students`: Retrieves all students registered for the specified presentation.
+- [x] `GET /api/v1/presentation/:presentationId/students`: Retrieves all students registered for the specified presentation.
   - Response: Returns an array of student objects.
   ```json
   {
@@ -111,8 +112,9 @@ Requests to the API require authentication via a JWT token. The token must be se
       ]
   }
   ```
+  - Notes: Students are ordered by registration time (oldest first).
 
-- [ ] `GET /api/v1/presentation/:presentationId/students/:studentId`: Retrieves the details of a specific student in the specified presentation.
+- [x] `GET /api/v1/presentation/:presentationId/students/:studentId`: Retrieves the details of a specific student in the specified presentation.
   - Response: Returns the student object.
   ```json
   {
@@ -122,8 +124,9 @@ Requests to the API require authentication via a JWT token. The token must be se
       }
   }
   ```
+  - Errors: 404 `NOT_FOUND` when no such student exists in this presentation.
 
-- [ ] `PUT /api/v1/presentation/:presentationId/students/:studentId`: Updates the name of a specific student in the specified presentation.
+- [x] `PUT /api/v1/presentation/:presentationId/students/:studentId`: Updates the name of a specific student in the specified presentation.
   - Request Body:
   ```json
   {
@@ -139,6 +142,8 @@ Requests to the API require authentication via a JWT token. The token must be se
       }
   }
   ```
+  - Errors: 404 `NOT_FOUND` when no such student exists in this presentation; 409 `CONFLICT` when another student in this presentation already has the new name.
 
-- [ ] `DELETE /api/v1/presentation/:presentationId/students/:studentId`: Deletes a specific student from the specified presentation.
+- [x] `DELETE /api/v1/presentation/:presentationId/students/:studentId`: Deletes a specific student from the specified presentation.
   - Response: Returns an http status code indicating success or failure.
+  - Errors: 404 `NOT_FOUND` when no such student exists in this presentation.

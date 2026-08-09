@@ -10,6 +10,7 @@ import (
 	"classdir/api/internal/hub"
 	"classdir/api/internal/presentation"
 	"classdir/api/internal/shared/cfg"
+	"classdir/api/internal/student"
 )
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 
 	api := http.NewServeMux()
 	presentation.RegisterRoutes(api, store)
+	student.RegisterRoutes(api, student.NewStore(pool))
 
 	h := hub.NewHub(store)
 
