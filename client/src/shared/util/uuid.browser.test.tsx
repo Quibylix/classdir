@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "../test/fixture";
 import { render } from "vitest-browser-react";
 import { uuidv7 } from "./uuid";
 

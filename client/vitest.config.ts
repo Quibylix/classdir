@@ -17,6 +17,7 @@ export default defineConfig({
       {
         test: {
           name: "browser",
+          env: { VITE_API_URL: "" },
           browser: {
             enabled: true,
             provider: playwright(),

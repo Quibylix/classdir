@@ -43,9 +43,14 @@ The client uses `oxlint` and `oxfmt` (not ESLint/Prettier). Configs: `client/.ox
 
 Tests use Vitest. Config: `client/vitest.config.ts` defines two projects — `unit` (node environment, `src/**/*.unit.test.ts`) and `browser` (chromium via Playwright, `src/**/*.browser.test.tsx`). Browser tests require a Chromium binary; once `pnpm install` is run, install it once with:
 ```sh
-cd client && PLAYWRIGHT_BROWSERS_PATH=./node_modules/.playwright-browsers pnpm exec playwright install chromium
+cd client && pnpm exec playwright install chromium
 ```
-The project-local `node_modules/.playwright-browsers/` is used so no global cache permission is needed. The `test:*` scripts in `package.json` already set `PLAYWRIGHT_BROWSERS_PATH` for you. Tests are NOT run in the client Docker image (Playwright/Chromium isn't installed there); they're a host/CI step like `pnpm lint`/`pnpm build`.
+
+Browser tests mock the API with MSW. The harness lives in `client/src/shared/test/`:
+- `handlers.ts` — REST request handlers; add new ones here.
+- `browser.ts` — `setupWorker(...handlers)`; the generated `public/mockServiceWorker.js` is served at `/mockServiceWorker.js` in vitest browser mode (regenerate with `pnpm exec msw init public/`). It's excluded from oxfmt via `client/.oxfmtrc.json`.
+- `fixture.ts` — re-exports a `test` (auto-starts the worker via an auto fixture, `worker` fixture available per-test) plus `describe`/`it`/`expect`. Import from `../test/fixture` instead of `vitest` in browser tests to get MSW wired up.
+- `vitest.config.ts` sets `env: { VITE_API_URL: "" }` for the browser project so the API client uses relative URLs (same-origin) — required for the service worker to intercept. The dev `.env` `VITE_API_URL=http://localhost:5173` is deliberately not used in tests.
 
 ## Contracts and cross-container changes
 
