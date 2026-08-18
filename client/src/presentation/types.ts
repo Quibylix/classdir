@@ -20,6 +20,12 @@ export const PresentationPreviewSchema = z.object({
 });
 export type PresentationPreview = z.infer<typeof PresentationPreviewSchema>;
 
+export const StudentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+export type Student = z.infer<typeof StudentSchema>;
+
 export const AnnotationPointSchema = z.object({
   x: z.number(),
   y: z.number(),

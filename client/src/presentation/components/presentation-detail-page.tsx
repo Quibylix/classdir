@@ -5,6 +5,7 @@ import { usePresentation } from "../hooks/use-presentation";
 import { deletePresentation } from "../api";
 import { DeleteModal } from "./delete-modal";
 import { SlideEditor } from "./slide-editor";
+import { StudentsPanel } from "./students-panel";
 import { CLIENT_CONFIGURE, clientControl } from "../../shared/cfg/routes";
 
 export default function PresentationDetailPage() {
@@ -143,6 +144,8 @@ export default function PresentationDetailPage() {
           </Group>
         </Group>
       )}
+
+      <StudentsPanel presentationId={presentation.id} />
 
       <Box style={{ flex: 1, minHeight: 0 }}>
         <SlideEditor

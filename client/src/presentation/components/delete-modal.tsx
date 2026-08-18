@@ -5,12 +5,20 @@ type DeleteModalProps = {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
+  heading?: string;
   isLoading?: boolean;
 };
 
-export function DeleteModal({ opened, onClose, onConfirm, title, isLoading }: DeleteModalProps) {
+export function DeleteModal({
+  opened,
+  onClose,
+  onConfirm,
+  title,
+  heading = "Delete presentation",
+  isLoading,
+}: DeleteModalProps) {
   return (
-    <Modal opened={opened} onClose={onClose} title="Delete presentation">
+    <Modal opened={opened} onClose={onClose} title={heading}>
       <Stack>
         <Text>Are you sure you want to delete "{title}"? This action cannot be undone.</Text>
         <Group justify="flex-end">

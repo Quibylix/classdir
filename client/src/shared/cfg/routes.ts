@@ -12,6 +12,11 @@ export const clientConfigure = (id: string) => `${CLIENT_CONFIGURE}/${id}`;
 export const PRESENTATIONS = `${API_PREFIX}/presentation`;
 export const presentationById = (id: string) => `${API_PREFIX}/presentation/${id}`;
 
+export const studentsByPresentation = (presentationId: string) =>
+  `${API_PREFIX}/presentation/${presentationId}/students`;
+export const studentById = (presentationId: string, studentId: string) =>
+  `${API_PREFIX}/presentation/${presentationId}/students/${studentId}`;
+
 export const WS_V1 = "/ws/v1";
 
 export const CLIENT_PRESENT = "/present";

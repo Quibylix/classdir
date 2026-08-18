@@ -7,7 +7,7 @@ let started = false;
 export const test = base.extend<{ worker: SetupWorker }>({
   worker: [
     // oxlint-disable-next-line no-empty-pattern
-    async ({ }, use) => {
+    async ({}, use) => {
       if (!started) {
         await worker.start();
         started = true;

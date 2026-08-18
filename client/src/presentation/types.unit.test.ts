@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   PresentationSchema,
   PresentationPreviewSchema,
+  StudentSchema,
   AnnotationOperationSchema,
   WSOutputMessageSchema,
 } from "./types";
@@ -21,6 +22,20 @@ describe("PresentationPreviewSchema", () => {
     expect(PresentationPreviewSchema.safeParse({ id: "x", title: "T", extra: 1 }).success).toBe(
       true,
     );
+  });
+});
+
+describe("StudentSchema", () => {
+  it("parses id and name", () => {
+    expect(StudentSchema.safeParse({ id: "x", name: "Alice" }).success).toBe(true);
+  });
+
+  it("rejects missing name", () => {
+    expect(StudentSchema.safeParse({ id: "x" }).success).toBe(false);
+  });
+
+  it("rejects missing id", () => {
+    expect(StudentSchema.safeParse({ name: "Alice" }).success).toBe(false);
   });
 });
 
