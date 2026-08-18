@@ -79,15 +79,17 @@ Commands have no per-command response; all state changes are communicated via br
 
 ## Spin Wheel Commands
 
-- [ ] **spin_wheel**: Spins the interactive wheel to randomly select a student.
-  - Parameters: None
-  - Response: `{ "data": { "selected_student": <student_id> } }`
-  - Broadcast: `{ "event": "wheel_spun", "data": { "selected_student": <student_id> } }`
-- [ ] **target_student**: Selects a specific student while maintaining the element of surprise for the rest of the class.
+- [ ] **spin_wheel**: Spins the interactive wheel to select a student. When `student_id` is omitted, a student is chosen at random; when provided, the wheel is rigged to stop on that student while preserving the element of surprise for the rest of the class.
   - Parameters:
-    - `student_id`: The ID of the student to be selected.
-  - Response: `{ "data": { "selected_student": <student_id> } }`
-  - Broadcast: `{ "event": "student_targeted", "data": { "selected_student": <student_id> } }`
+    - `student_id` (optional): The ID of the student to be selected. When omitted, selection is random.
+    - `time`: The number of seconds the server must wait between emitting `wheel_spin_started` and `wheel_spin_stopped`.
+  - Broadcast (phase 1 — spin signal): `{ "event": "wheel_spin_started" }`
+    - No data. Signals clients to begin the spinning animation.
+  - Broadcast (phase 2 — stop & reveal): `{ "event": "wheel_spin_stopped", "data": { "selected_student": <student_id> } }`
+    - Signals clients to stop the spinning and reveal the selected student.
+  - Notes:
+    - The two events are emitted sequentially by the server. The student is selected at command time; `wheel_spin_started` is sent immediately, followed by `wheel_spin_stopped` after the duration specified by `time` has elapsed.
+    - The phase-2 payload is identical whether the student was chosen randomly or via `student_id`; clients cannot distinguish rigged from random spins.
 - [ ] **show_wheel**: Displays the spin wheel on the presentation view.
   - Parameters: None
   - Response: `{ "data": { "wheel_visible": true } }`
